@@ -1,10 +1,11 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/dashboard_view_model.dart';
+import '../../viewmodels/medication_view_model.dart';
 import '../../data/repositories/profile_repository_impl.dart';
 import '../../data/repositories/measurement_repository_impl.dart';
 import 'measurements_screen.dart';
+import '../../screens/medications_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -21,8 +22,27 @@ class DashboardScreen extends StatelessWidget {
   }
 }
 
-class _DashboardView extends StatelessWidget {
+class _DashboardView extends StatefulWidget {
   const _DashboardView();
+
+  @override
+  State<_DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends State<_DashboardView> {
+  final _medViewModel = MedicationViewModel(); // Local instance
+
+  @override
+  void initState() {
+    super.initState();
+    _medViewModel.loadMedications();
+  }
+
+  @override
+  void dispose() {
+    _medViewModel.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,14 +55,20 @@ class _DashboardView extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => viewModel.loadDashboardData(),
+            onPressed: () {
+              viewModel.loadDashboardData();
+              _medViewModel.loadMedications();
+            },
           ),
         ],
       ),
       body: viewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: () => viewModel.loadDashboardData(),
+              onRefresh: () async {
+                 viewModel.loadDashboardData();
+                 _medViewModel.loadMedications();
+              },
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
@@ -87,21 +113,74 @@ class _DashboardView extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // Today's Medications (Mock)
-                  Text(
-                    "Today",
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  // Today's Pending Medications
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Today's pending",
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const MedicationsScreen()),
+                          ).then((_) => _medViewModel.loadMedications()); // Refresh on return
+                        },
+                        child: const Text('See all'),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
-                  Card(
-                    elevation: 0,
-                    color: colorScheme.surfaceContainerHighest,
-                    child: const ListTile(
-                      leading: Icon(Icons.medication),
-                      title: Text('Vitamin D'),
-                      subtitle: Text('10:00 AM - Take 1 pill'),
-                      trailing: Icon(Icons.check_circle_outline),
-                    ),
+                  
+                  // Local VM Builder
+                  AnimatedBuilder(
+                    animation: _medViewModel,
+                    builder: (context, child) {
+                      if (_medViewModel.isLoading) {
+                        return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
+                      }
+                      
+                      final pending = _medViewModel.pendingMedicationsForToday;
+
+                      if (pending.isEmpty) {
+                        return Card(
+                           elevation: 0,
+                           color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                           margin: EdgeInsets.zero,
+                           child: const Padding(
+                             padding: EdgeInsets.all(16.0),
+                             child: Center(child: Text("All caught up for today! ✅")),
+                           ),
+                        );
+                      }
+
+                      return Column(
+                        children: pending.map((entry) {
+                           final med = entry['med'] as dynamic; // Medication
+                           final slot = entry['slot'] as String;
+                           
+                           return Card(
+                              elevation: 0,
+                              color: colorScheme.surfaceContainerHighest,
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: const Icon(Icons.medication),
+                                title: Text(med.name),
+                                subtitle: Text('$slot ${med.dosage ?? ""}'), // simple text
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  onPressed: () {
+                                    _medViewModel.logIntake(med.id!, slot, true);
+                                    // It will disappear automatically due to AnimatedBuilder + getter logic
+                                  },
+                                ),
+                              ),
+                            );
+                        }).toList(),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 24),
@@ -113,7 +192,7 @@ class _DashboardView extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   GridView.count(
-                    crossAxisCount: 3, // Smaller cards for actions
+                    crossAxisCount: 3, 
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                     shrinkWrap: true,
@@ -126,14 +205,17 @@ class _DashboardView extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => const MeasurementsScreen()),
-                          ).then((_) => viewModel.loadDashboardData()); // Refresh on return
+                          ).then((_) => viewModel.loadDashboardData()); 
                         },
                       ),
                       _ActionCard(
                         title: 'Medications',
                         icon: Icons.medication_liquid,
                         onTap: () {
-                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming Soon')));
+                           Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const MedicationsScreen()),
+                          ).then((_) => _medViewModel.loadMedications());
                         },
                       ),
                       _ActionCard(
