@@ -1,114 +1,151 @@
-
-// Import foundation for basic Flutter classes like ChangeNotifier.
+import 'dart:async';
 import 'package:flutter/foundation.dart';
-// Import dependencies.
 import '../../domain/entities/measurement.dart';
 import '../../domain/repositories/measurement_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// Define MeasurementsViewModel class that extends ChangeNotifier.
-// This class manages the state for the MeasurementsScreen (Presentation Logic).
-// It notifies listeners (the UI) when state changes.
 class MeasurementsViewModel extends ChangeNotifier {
-  // Reference to the repository to perform data operations.
   final MeasurementRepository _repository;
-  // Reference to FirebaseAuth to get the current user.
   final FirebaseAuth _auth;
 
-  // Constructor with dependency injection.
-  // Allows injecting a specific repository implementation (good for testing).
-  // Defaults to FirebaseAuth.instance if not provided.
   MeasurementsViewModel({
     required MeasurementRepository repository,
     FirebaseAuth? auth,
   })  : _repository = repository,
         _auth = auth ?? FirebaseAuth.instance;
 
-  // State variable to track loading status.
+  StreamSubscription<List<Measurement>>? _subscription;
+  
+  List<Measurement> _allMeasurements = [];
+  
+  // Filtered by selected type
+  List<Measurement> get measurements => _allMeasurements
+      .where((m) => m.type == _selectedType)
+      .toList();
+      
+  MeasurementType _selectedType = MeasurementType.pressure;
+  MeasurementType get selectedType => _selectedType;
+
   bool _isLoading = false;
-  // Getter for isLoading to expose it to the UI (read-only).
   bool get isLoading => _isLoading;
 
-  // State variable to track error messages.
   String? _errorMessage;
-  // Getter for errorMessage.
   String? get errorMessage => _errorMessage;
 
-  // Function to add a measurement.
-  // Called by the UI when the user clicks 'Save'.
-  // Returns true if successful, false otherwise.
+  void setType(MeasurementType type) {
+    _selectedType = type;
+    notifyListeners();
+  }
+
+  void loadMeasurements() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _errorMessage = 'User not logged in';
+      notifyListeners();
+      return;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    _subscription?.cancel();
+    _subscription = _repository.getUserMeasurements(user.uid).listen(
+      (data) {
+        _allMeasurements = data;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (e) {
+        _errorMessage = e.toString();
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
+  }
+
   Future<bool> addMeasurement({
     required MeasurementType type,
     double? value,
+    double? value2,
     required DateTime date,
     String? note,
   }) async {
-    // Get the current logged-in user.
     final user = _auth.currentUser;
-    
-    // Check if user is logged in.
-    if (user == null) {
-      _errorMessage = 'User must be logged in'; // Set error message
-      notifyListeners(); // Notify UI to update
-      return false;
-    }
+    if (user == null) return false;
 
-    // STRICT VALIDATION
     if (value == null || value <= 0) {
       _errorMessage = 'Value must be greater than 0';
       notifyListeners();
       return false;
     }
 
-    // Determine unit automatically based on type
-    String unit;
-    switch (type) {
-      case MeasurementType.weight:
-        unit = 'kg';
-        break;
-      case MeasurementType.sugar:
-        unit = 'mg/dL';
-        break;
-      case MeasurementType.pressure:
-        unit = 'mmHg';
-        break;
-      case MeasurementType.pulse:
-        unit = 'bpm';
-        break;
-      case MeasurementType.temperature:
-        unit = '°C';
-        break;
-    }
+    String unit = _getUnitForType(type);
 
-    // Set loading state to true.
     _isLoading = true;
-    _errorMessage = null; // Clear previous errors
-    notifyListeners(); // Notify UI to show loading spinner
+    notifyListeners();
 
     try {
-      // Create a Measurement domain entity.
       final measurement = Measurement(
         userId: user.uid,
         type: type,
         value: value,
+        value2: value2,
         unit: unit,
         date: date,
         note: note,
       );
 
-      // Call the repository to save the measurement.
       await _repository.addMeasurement(measurement);
-      
-      // If successful, stop loading.
       _isLoading = false;
-      notifyListeners(); // Notify UI
+      notifyListeners();
       return true;
     } catch (e) {
-      // If an error occurs, capture it and stop loading.
       _errorMessage = e.toString();
       _isLoading = false;
-      notifyListeners(); // Notify UI to show error
+      notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> updateMeasurement(Measurement measurement) async {
+     _isLoading = true;
+     notifyListeners();
+     
+     try {
+       await _repository.updateMeasurement(measurement);
+       _isLoading = false;
+       notifyListeners();
+       return true;
+     } catch (e) {
+       _errorMessage = e.toString();
+       _isLoading = false;
+       notifyListeners();
+       return false;
+     }
+  }
+
+  Future<void> deleteMeasurement(String id) async {
+    try {
+      await _repository.deleteMeasurement(id);
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  String _getUnitForType(MeasurementType type) {
+    switch (type) {
+      case MeasurementType.weight: return 'kg';
+      case MeasurementType.sugar: return 'mg/dL';
+      case MeasurementType.pressure: return 'mmHg';
+      case MeasurementType.pulse: return 'bpm';
+      case MeasurementType.temperature: return '°C';
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }

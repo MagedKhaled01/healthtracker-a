@@ -71,6 +71,25 @@ class AuthViewModel extends ChangeNotifier {
 
 
 
+  bool get isGuest => _auth.currentUser?.isAnonymous ?? false;
+
+  Future<bool> signInAnonymously() async {
+    _setLoading(true);
+    try {
+      await _auth.signInAnonymously();
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<void> signOut() async {
+     await _auth.signOut();
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     if (value) _errorMessage = null; // Clear error on new op

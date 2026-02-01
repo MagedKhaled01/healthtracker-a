@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../viewmodels/profile_form_view_model.dart';
 import '../presentation/views/dashboard_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class ProfileFormScreen extends StatefulWidget {
   const ProfileFormScreen({super.key});
@@ -66,8 +67,13 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Complete Your Profile')),
+      appBar: AppBar(
+        title: Text(loc.translate('complete_profile')),
+        automaticallyImplyLeading: true, // Visible back arrow
+      ),
       body: _viewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -76,20 +82,20 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    const Text(
-                      'Please provide some basic info to get started.',
+                    Text(
+                      loc.translate('profile_description'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16),
+                      style: const TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 24),
                     
                     // Name (Required)
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Name *'),
+                      decoration: InputDecoration(labelText: "${loc.translate('name')} *"),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your name';
+                          return loc.translate('enter_name_error');
                         }
                         return null;
                       },
@@ -99,12 +105,12 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                     // Height (Optional)
                     TextFormField(
                       controller: _heightController,
-                      decoration: const InputDecoration(labelText: 'Height (cm) - Optional'),
+                      decoration: InputDecoration(labelText: loc.translate('height_optional')),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value != null && value.trim().isNotEmpty) {
                            final h = double.tryParse(value);
-                           if (h == null || h <= 0) return 'Invalid height';
+                           if (h == null || h <= 0) return loc.translate('invalid_height');
                         }
                         return null;
                       },
@@ -114,12 +120,12 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                     // Weight (Optional)
                     TextFormField(
                        controller: _weightController,
-                       decoration: const InputDecoration(labelText: 'Weight (kg) - Optional'),
+                       decoration: InputDecoration(labelText: loc.translate('weight_optional')),
                        keyboardType: TextInputType.number,
                        validator: (value) {
                           if (value != null && value.trim().isNotEmpty) {
                              final w = double.tryParse(value);
-                             if (w == null || w <= 0) return 'Invalid weight';
+                             if (w == null || w <= 0) return loc.translate('invalid_weight');
                           }
                           return null;
                        }
@@ -128,10 +134,10 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
 
                     // Gender (Optional)
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Gender - Optional'),
+                      decoration: InputDecoration(labelText: loc.translate('gender_optional')),
                       value: _selectedGender,
                       items: ['Male', 'Female', 'Other'].map((String val) {
-                        return DropdownMenuItem(value: val, child: Text(val));
+                        return DropdownMenuItem(value: val, child: Text(loc.translate(val.toLowerCase()) == val.toLowerCase() ? val : loc.translate(val.toLowerCase()))); // Fallback or key logic
                       }).toList(),
                       onChanged: (val) {
                          setState(() => _selectedGender = val);
@@ -141,7 +147,8 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: _submit,
-                      child: const Text('Save & Continue'),
+                      style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                      child: Text(loc.translate('save_continue')),
                     ),
                   ],
                 ),

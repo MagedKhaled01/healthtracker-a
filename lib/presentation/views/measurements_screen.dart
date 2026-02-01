@@ -1,218 +1,307 @@
-
-// Import Material package for UI components.
 import 'package:flutter/material.dart';
-// Import Provider package for state management.
 import 'package:provider/provider.dart';
-// Import the ViewModel and Repository implementation.
+import 'package:intl/intl.dart';
 import '../viewmodels/measurements_view_model.dart';
 import '../../data/repositories/measurement_repository_impl.dart';
 import '../../domain/entities/measurement.dart';
+import 'add_measurement_screen.dart';
+import '../../utils/auth_guard.dart'; // Import AuthGuard
+import '../../l10n/app_localizations.dart';
 
-// Define the main screen widget as a Stateless Widget.
-// It sets up the Provider for the ViewModel.
 class MeasurementsScreen extends StatelessWidget {
-  const MeasurementsScreen({super.key});
+  final bool isTab;
+  const MeasurementsScreen({super.key, this.isTab = false});
 
   @override
   Widget build(BuildContext context) {
-    // ChangeNotifierProvider creates an instance of MeasurementsViewModel.
-    // It makes the ViewModel available to the widget tree below it.
     return ChangeNotifierProvider(
       create: (_) => MeasurementsViewModel(
-        repository: MeasurementRepositoryImpl(), // Inject the repository implementation
-      ),
-      child: const _MeasurementsView(), // The actual UI widget
+        repository: MeasurementRepositoryImpl(), 
+      )..loadMeasurements(),
+      child: _MeasurementsView(isTab: isTab),
     );
   }
 }
 
-// Define the UI widget as a StatefulWidget because it has local state (text controllers).
-class _MeasurementsView extends StatefulWidget {
-  const _MeasurementsView();
-
-  @override
-  State<_MeasurementsView> createState() => _MeasurementsViewState();
-}
-
-class _MeasurementsViewState extends State<_MeasurementsView> {
-  // Key to identify the form and validate it.
-  final _formKey = GlobalKey<FormState>();
-
-  // Local state variables for form inputs.
-  MeasurementType _selectedType = MeasurementType.pressure;
-  final _valueController = TextEditingController();
-  final _noteController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
-
-  // Dispose controllers when the widget is removed to free resources.
-  @override
-  void dispose() {
-    _valueController.dispose();
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  // Function to show the date picker dialog and update the selected date.
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000), // Earliest allowed date
-      lastDate: DateTime.now(), // Latest allowed date (today)
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked; // Update state with new date
-      });
-    }
-  }
-
-  // Function handling the save button press.
-  Future<void> _saveMeasurement() async {
-    // Validate the form fields.
-    if (_formKey.currentState!.validate()) {
-        // Access the ViewModel using 'read' (one-time access, doesn't listen for updates).
-        final viewModel = context.read<MeasurementsViewModel>();
-        
-        // Parse the value from text to double.
-        final value = _valueController.text.isNotEmpty
-            ? double.tryParse(_valueController.text)
-            : null;
-
-        // Call the addMeasurement method in the ViewModel.
-        // NOTE: 'unit' is no longer passed; it is handled automatically by the ViewModel.
-        final success = await viewModel.addMeasurement(
-          type: _selectedType,
-          value: value,
-          date: _selectedDate,
-          note: _noteController.text.isNotEmpty ? _noteController.text : null,
-        );
-
-        // Check if the widget is still in the tree before using context.
-        if (!mounted) return;
-
-        if (success) {
-          // Show success message.
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Measurement Saved')),
-          );
-          // Go back to the previous screen.
-          Navigator.pop(context);
-        } else if (viewModel.errorMessage != null) {
-           // Show error message from ViewModel.
-           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${viewModel.errorMessage}')),
-          );
-        }
-    }
-  }
+class _MeasurementsView extends StatelessWidget {
+  final bool isTab;
+  const _MeasurementsView({this.isTab = false});
 
   @override
   Widget build(BuildContext context) {
-    // Watch the ViewModel to rebuild when notifyListeners is called.
     final viewModel = context.watch<MeasurementsViewModel>();
+    final measurements = viewModel.measurements;
+    final colorScheme = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Measurement'),
-      ),
-      // specific deprecated_member_use fix was requested by analyze result
-      body: viewModel.isLoading 
-        ? const Center(child: CircularProgressIndicator()) // Show loader if saving
-        : SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Dropdown for selecting measurement type.
-              DropdownButtonFormField<MeasurementType>(
-                value: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Type',
-                  border: OutlineInputBorder(),
-                ),
-                items: MeasurementType.values.map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Text(type.name.toUpperCase()), // Display name
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedType = value;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              // Text field for Value.
-              TextFormField(
-                controller: _valueController,
-                decoration: const InputDecoration(
-                  labelText: 'Value (Required)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a value';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'Please enter a valid number';
-                  }
-                  if (double.parse(value) <= 0) {
-                     return 'Value must be greater than 0';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              // Custom ink well for Date picking.
-              InkWell(
-                onTap: _pickDate,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Date',
-                    border: OutlineInputBorder(),
+      appBar: isTab ? null : AppBar(title: Text(loc.translate('measurements'))),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. Header (Type Selector)
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: colorScheme.surface,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: MeasurementType.values.map((type) {
+                        final isSelected = viewModel.selectedType == type;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: FilterChip(
+                            showCheckmark: false,
+                            selected: isSelected,
+                            label: Text(loc.translate(type.name)), 
+                            onSelected: (bool selected) {
+                              if (selected) {
+                                viewModel.setType(type);
+                              }
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("${_selectedDate.toLocal()}".split(' ')[0]),
-                      const Icon(Icons.calendar_today),
-                    ],
-                  ),
-                ),
+                ],
               ),
-              const SizedBox(height: 16),
-              // Text field for Note.
-              TextFormField(
-                controller: _noteController,
-                decoration: const InputDecoration(
-                  labelText: 'Note (Optional)',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
-              // Save button.
-              SizedBox(
+            ),
+
+            // 2. Graph (unchanged)
+            if (measurements.isNotEmpty)
+              Container(
+                height: 200,
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveMeasurement,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: CustomPaint(
+                  painter: _TrendGraphPainter(
+                    measurements: measurements,
+                    color: colorScheme.primary,
                   ),
-                  child: const Text('Save'),
                 ),
               ),
-            ],
-          ),
+
+            if (measurements.isEmpty && !viewModel.isLoading)
+               Padding(
+                 padding: const EdgeInsets.all(32.0),
+                 child: Center(child: Text("${loc.translate('no_data_for')} ${loc.translate(viewModel.selectedType.name)}")),
+               ),
+
+            // 3. List
+            Expanded(
+              child: viewModel.isLoading 
+                ? const Center(child: CircularProgressIndicator()) 
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      viewModel.loadMeasurements();
+                    },
+                    child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: measurements.length,
+                    itemBuilder: (context, index) {
+                      final m = measurements[index];
+                      // Use device locale for formatting
+                      final locale = Localizations.localeOf(context).toString();
+                      
+                      String valueText;
+                      if (m.type == MeasurementType.pressure && m.value2 != null) {
+                        valueText = '${m.value?.toInt()}/${m.value2?.toInt()} ${m.unit}';
+                      } else {
+                        valueText = '${m.value?.toStringAsFixed(1) ?? "--"} ${m.unit}';
+                      }
+
+                      return Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                        margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                          onTap: () {
+                             Navigator.push(
+                               context,
+                               MaterialPageRoute(
+                                 builder: (_) => ChangeNotifierProvider.value(
+                                   value: viewModel,
+                                   child: AddMeasurementScreen(measurementToEdit: m),
+                                 ),
+                               ),
+                             ).then((_) => viewModel.loadMeasurements()); 
+                          },
+                          leading: CircleAvatar(
+                            backgroundColor: colorScheme.primaryContainer.withOpacity(0.5),
+                            child: Icon(_getIconForType(m.type), color: colorScheme.primary, size: 20),
+                          ),
+                          title: Text(
+                            valueText,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(DateFormat.yMMMd(locale).add_jm().format(m.date)),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                            onPressed: () async {
+                              AuthGuard.protect(context, () async {
+                                 final confirm = await showDialog<bool>(
+                                   context: context,
+                                   builder: (ctx) => AlertDialog(
+                                     title: Text(loc.translate('delete_confirm_title')),
+                                     content: Text(loc.translate('delete_measurement_confirm')),
+                                     actions: [
+                                       TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.translate('no'))),
+                                       TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.translate('yes'))),
+                                     ],
+                                   ),
+                                 );
+                                 if (confirm == true && m.id != null) {
+                                   await viewModel.deleteMeasurement(m.id!);
+                                 }
+                              });
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ),
+          ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => AuthGuard.protect(context, () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+               builder: (_) => ChangeNotifierProvider.value(
+                 value: viewModel,
+                 child: AddMeasurementScreen(initialType: viewModel.selectedType),
+               ),
+            ),
+          ).then((_) => viewModel.loadMeasurements());
+        }),
+        label: Text(loc.translate('add_log')),
+        icon: const Icon(Icons.add),
       ),
     );
   }
+
+  IconData _getIconForType(MeasurementType type) {
+    switch (type) {
+      case MeasurementType.weight: return Icons.monitor_weight;
+      case MeasurementType.sugar: return Icons.bloodtype;
+      case MeasurementType.pressure: return Icons.favorite;
+      case MeasurementType.pulse: return Icons.monitor_heart;
+      case MeasurementType.temperature: return Icons.thermostat;
+      default: return Icons.show_chart;
+    }
+  }
+}
+
+class _TrendGraphPainter extends CustomPainter {
+  final List<Measurement> measurements;
+  final Color color;
+
+  _TrendGraphPainter({required this.measurements, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (measurements.isEmpty) return;
+
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+      
+    final dotPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    // Second line paint (for Diastolic)
+    final paint2 = Paint()
+      ..color = color.withOpacity(0.5)
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final dotPaint2 = Paint()
+      ..color = color.withOpacity(0.5)
+      ..style = PaintingStyle.fill;
+    
+    // 1. Sort by date
+    final sorted = List<Measurement>.from(measurements);
+    sorted.sort((a, b) => a.date.compareTo(b.date)); 
+
+    // 2. Find Min/Max
+    double minVal = double.infinity;
+    double maxVal = double.negativeInfinity;
+    
+    for (var m in sorted) {
+      if (m.value != null) {
+        if (m.value! < minVal) minVal = m.value!;
+        if (m.value! > maxVal) maxVal = m.value!;
+      }
+      if (m.value2 != null) {
+        if (m.value2! < minVal) minVal = m.value2!;
+        if (m.value2! > maxVal) maxVal = m.value2!;
+      }
+    }
+    
+    if (minVal == double.infinity) return;
+    
+    final range = maxVal - minVal;
+    final bottomY = minVal - (range * 0.2); // 20% padding
+    final topY = maxVal + (range * 0.2);
+    final effectiveRange = (topY - bottomY) == 0 ? 1.0 : (topY - bottomY);
+
+    final path = Path();
+    final path2 = Path(); // For value2
+    bool path2Started = false;
+
+    final widthStep = size.width / (sorted.length > 1 ? sorted.length - 1 : 1);
+
+    for (int i = 0; i < sorted.length; i++) {
+       final m = sorted[i];
+       if (m.value == null) continue;
+
+       final x = i * widthStep;
+       
+       // Draw Value 1 (Systolic)
+       final normalizedY = (m.value! - bottomY) / effectiveRange; 
+       final y = size.height - (normalizedY * size.height);
+       
+       if (i == 0) path.moveTo(x, y);
+       else path.lineTo(x, y);
+       canvas.drawCircle(Offset(x, y), 4, dotPaint);
+
+       // Draw Value 2 (Diastolic)
+       if (m.value2 != null) {
+           final normalizedY2 = (m.value2! - bottomY) / effectiveRange; 
+           final y2 = size.height - (normalizedY2 * size.height);
+
+           if (!path2Started) {
+             path2.moveTo(x, y2);
+             path2Started = true;
+           } else {
+             path2.lineTo(x, y2);
+           }
+           canvas.drawCircle(Offset(x, y2), 4, dotPaint2);
+       }
+    }
+    
+    canvas.drawPath(path, paint);
+    if (path2Started) {
+      canvas.drawPath(path2, paint2);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

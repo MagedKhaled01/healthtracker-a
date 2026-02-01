@@ -5,6 +5,7 @@ import '../../services/auth_service.dart';
 import '../presentation/views/dashboard_screen.dart';
 import 'profile_form_screen.dart';
 import '../services/profile_service.dart';
+import '../l10n/app_localizations.dart';
 
 import '../viewmodels/auth_view_model.dart';
 
@@ -56,7 +57,7 @@ class _AuthChoiceScreenState extends State<AuthChoiceScreen> with SingleTickerPr
         MaterialPageRoute(builder: (context) => const DashboardScreen()),
       );
     } else {
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ProfileFormScreen()),
       );
@@ -130,6 +131,8 @@ class _AuthChoiceScreenState extends State<AuthChoiceScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    
     return Scaffold(
       body: SafeArea(
         child: _isLoading 
@@ -139,7 +142,7 @@ class _AuthChoiceScreenState extends State<AuthChoiceScreen> with SingleTickerPr
               const SizedBox(height: 24),
               // Header
               Text(
-                'Health Tracker',
+                loc.translate('app_title'),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
@@ -147,9 +150,9 @@ class _AuthChoiceScreenState extends State<AuthChoiceScreen> with SingleTickerPr
               // Tabs
               TabBar(
                 controller: _tabController,
-                tabs: const [
-                  Tab(text: 'Login'),
-                  Tab(text: 'Register'),
+                tabs: [
+                  Tab(text: loc.translate('login')),
+                  Tab(text: loc.translate('register')),
                 ],
               ),
               
@@ -169,10 +172,10 @@ class _AuthChoiceScreenState extends State<AuthChoiceScreen> with SingleTickerPr
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   children: [
-                    const Row(children: [
-                        Expanded(child: Divider()),
-                        Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text("OR")),
-                        Expanded(child: Divider()),
+                    Row(children: [
+                        const Expanded(child: Divider()),
+                        Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text(loc.translate('or_divider'))),
+                        const Expanded(child: Divider()),
                     ]),
                     const SizedBox(height: 16),
                     
@@ -183,12 +186,12 @@ class _AuthChoiceScreenState extends State<AuthChoiceScreen> with SingleTickerPr
 
                         _AltAuthButton(
                           icon: Icons.g_mobiledata, 
-                          label: 'Google', 
+                          label: loc.translate('auth_google'), 
                           onTap: _performGoogleLogin,
                         ),
                          _AltAuthButton(
                           icon: Icons.person_outline, 
-                          label: 'Guest', 
+                          label: loc.translate('auth_guest'), 
                           onTap: _continueAsGuest,
                         ),
                       ],
@@ -203,6 +206,7 @@ class _AuthChoiceScreenState extends State<AuthChoiceScreen> with SingleTickerPr
   }
 
   Widget _buildEmailForm({required bool isRegister}) {
+    final loc = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Form(
@@ -212,16 +216,16 @@ class _AuthChoiceScreenState extends State<AuthChoiceScreen> with SingleTickerPr
             children: [
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email)),
+                decoration: InputDecoration(labelText: loc.translate('email_label'), prefixIcon: const Icon(Icons.email)),
                 keyboardType: TextInputType.emailAddress,
-                validator: (val) => val != null && val.contains('@') ? null : 'Invalid Email',
+                validator: (val) => val != null && val.contains('@') ? null : loc.translate('invalid_email'),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock)),
+                decoration: InputDecoration(labelText: loc.translate('password_label'), prefixIcon: const Icon(Icons.lock)),
                 obscureText: true,
-                validator: (val) => val != null && val.length >= 6 ? null : 'Min 6 chars',
+                validator: (val) => val != null && val.length >= 6 ? null : loc.translate('min_password_len'),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -229,7 +233,7 @@ class _AuthChoiceScreenState extends State<AuthChoiceScreen> with SingleTickerPr
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
                 ),
-                child: Text(isRegister ? 'Create Account' : 'Login'),
+                child: Text(isRegister ? loc.translate('create_account') : loc.translate('login')),
               ),
             ],
           ),

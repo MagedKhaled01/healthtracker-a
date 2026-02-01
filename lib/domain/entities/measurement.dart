@@ -23,6 +23,9 @@ class Measurement {
   
   // Optional double to store the numeric value of the measurement.
   final double? value;
+
+  // Optional double for secondary value (e.g., Diastolic pressure)
+  final double? value2;
   
   // Optional String to store the unit of measurement (e.g., 'kg', 'mg/dL').
   final String? unit;
@@ -39,6 +42,7 @@ class Measurement {
     required this.userId, // Initialize userId (required)
     required this.type, // Initialize type (required)
     this.value, // Initialize value (optional)
+    this.value2, // Initialize value2 (optional)
     this.unit, // Initialize unit (optional)
     required this.date, // Initialize date (required)
     this.note, // Initialize note (optional)

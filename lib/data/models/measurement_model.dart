@@ -14,6 +14,7 @@ class MeasurementModel extends Measurement {
     required super.userId, // Pass userId to super
     required super.type, // Pass type to super
     super.value, // Pass value to super
+    super.value2, // Pass value2 to super
     super.unit, // Pass unit to super
     required super.date, // Pass date to super
     super.note, // Pass note to super
@@ -26,6 +27,7 @@ class MeasurementModel extends Measurement {
       'userId': userId, // Map userId field
       'type': type.name, // Map type enum to string
       'value': value, // Map value field
+      'value2': value2, // Map value2 field
       'unit': unit, // Map unit field
       // Convert Dart DateTime to Firestore Timestamp.
       'date': Timestamp.fromDate(date), 
@@ -45,6 +47,7 @@ class MeasurementModel extends Measurement {
         orElse: () => MeasurementType.pressure,
       ), // Convert string back to enum
       value: map['value']?.toDouble(), // Get value and convert to double, null-safe
+      value2: map['value2']?.toDouble(), // Get value2
       unit: map['unit'], // Get unit, can be null
       date: (map['date'] as Timestamp).toDate(), // Convert Firestore Timestamp back to Dart DateTime
       note: map['note'], // Get note, can be null
@@ -59,6 +62,7 @@ class MeasurementModel extends Measurement {
       userId: measurement.userId, // Copy userId
       type: measurement.type, // Copy type
       value: measurement.value, // Copy value
+      value2: measurement.value2, // Copy value2
       unit: measurement.unit, // Copy unit
       date: measurement.date, // Copy date
       note: measurement.note, // Copy note

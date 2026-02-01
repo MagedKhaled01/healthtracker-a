@@ -13,4 +13,13 @@ abstract class MeasurementRepository {
 
   // Get the latest measurement of a specific type for a user.
   Future<Measurement?> getLatestMeasurement(String userId, MeasurementType type);
+
+  // Get all measurements for a user as a stream
+  Stream<List<Measurement>> getUserMeasurements(String userId);
+
+  // Update an existing measurement
+  Future<void> updateMeasurement(Measurement measurement);
+
+  // Delete a measurement by ID
+  Future<void> deleteMeasurement(String id);
 }

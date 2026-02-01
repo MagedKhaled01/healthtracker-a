@@ -42,4 +42,30 @@ class MeasurementRepositoryImpl implements MeasurementRepository {
     }
     return null;
   }
+
+  @override
+  Stream<List<Measurement>> getUserMeasurements(String userId) {
+    return _db
+        .collection('measurements')
+        .where('userId', isEqualTo: userId)
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return MeasurementModel.fromMap(doc.data(), doc.id);
+      }).toList();
+    });
+  }
+
+  @override
+  Future<void> updateMeasurement(Measurement measurement) async {
+    if (measurement.id == null) return;
+    final model = MeasurementModel.fromEntity(measurement);
+    await _db.collection('measurements').doc(measurement.id).update(model.toMap());
+  }
+
+  @override
+  Future<void> deleteMeasurement(String id) async {
+    await _db.collection('measurements').doc(id).delete();
+  }
 }

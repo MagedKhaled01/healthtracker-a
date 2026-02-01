@@ -8,15 +8,21 @@ class MedicationService {
   CollectionReference get _medications => _firestore.collection('medications');
 
   // Add a new medication
-  Future<void> addMedication(Medication medication) async {
-    await _medications.add(medication.toMap());
+  Future<DocumentReference> addMedication(Medication medication) async {
+    return await _medications.add(medication.toMap());
+  }
+
+  // Update an existing medication
+  Future<void> updateMedication(Medication medication) async {
+    if (medication.id == null) return;
+    await _medications.doc(medication.id).update(medication.toMap());
   }
 
   // Get stream of ACTIVE medications for a user
   Stream<List<Medication>> getUserMedications(String userId) {
     return _medications
         .where('userId', isEqualTo: userId)
-        .where('isActive', isEqualTo: true) 
+        // .where('isActive', isEqualTo: true) // Removed, we handle visibility logic in app or via end date
         .snapshots()
         .map((snapshot) {
       final docs = snapshot.docs.map((doc) {
