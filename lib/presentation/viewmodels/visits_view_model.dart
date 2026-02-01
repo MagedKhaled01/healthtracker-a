@@ -4,7 +4,9 @@ import '../../data/repositories/visit_repository.dart';
 import '../../models/visit_model.dart';
 import 'dart:async';
 
-class VisitsViewModel extends ChangeNotifier {
+import '../../viewmodels/mixins/selection_view_model_mixin.dart';
+
+class VisitsViewModel extends ChangeNotifier with SelectionViewModelMixin<String> {
   final VisitRepository _repository = VisitRepository();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 

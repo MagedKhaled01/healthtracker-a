@@ -6,7 +6,9 @@ import '../models/test_model.dart';
 import '../data/repositories/test_repository.dart';
 import '../services/storage_service.dart';
 
-class TestViewModel extends ChangeNotifier {
+import 'mixins/selection_view_model_mixin.dart';
+
+class TestViewModel extends ChangeNotifier with SelectionViewModelMixin<String> {
   final TestRepository _repository;
   final StorageService _storage;
   final FirebaseAuth _auth;

@@ -5,7 +5,9 @@ import '../models/medication_model.dart';
 import '../services/medication_service.dart';
 import '../services/notification_service.dart';
 
-class MedicationViewModel extends ChangeNotifier {
+import 'mixins/selection_view_model_mixin.dart';
+
+class MedicationViewModel extends ChangeNotifier with SelectionViewModelMixin<String> {
   final MedicationService _service;
   final NotificationService _notifications;
   final FirebaseAuth _auth;

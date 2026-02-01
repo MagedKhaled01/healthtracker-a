@@ -6,6 +6,7 @@ import '../../models/test_model.dart';
 import 'add_test_screen.dart';
 import 'test_details_screen.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/auth_guard.dart';
 
 class TestListScreen extends StatefulWidget {
   final bool isTab; // To adjust AppBar if needed
@@ -39,101 +40,173 @@ class _TestListScreenState extends State<TestListScreen> {
 
     return ChangeNotifierProvider.value(
       value: _viewModel,
-      child: Scaffold(
-        appBar: widget.isTab ? null : AppBar(title: Text(loc.translate('my_tests'))),
-        body: SafeArea(
-          child: Column(
-            children: [
-              // Header & Search
-              Container(
-                padding: const EdgeInsets.all(16),
-                color: Theme.of(context).colorScheme.surface,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: loc.translate('search_test_hint'),
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                        filled: true,
-                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      child: Consumer<TestViewModel>(
+        builder: (context, vm, child) {
+          final isSelection = vm.isSelectionMode;
+          final selectedCount = vm.selectedCount;
+
+          return Scaffold(
+            appBar: isSelection
+              ? AppBar(
+                  leading: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => vm.clearSelection(),
+                  ),
+                  title: Text("$selectedCount ${loc.translate('selected')}"),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  actions: [
+                    if (selectedCount == 1)
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => AuthGuard.protect(context, () {
+                           final id = vm.selectedIds.first;
+                           final test = vm.tests.firstWhere((t) => t.id == id);
+                           vm.clearSelection();
+                           Navigator.push(
+                             context,
+                             MaterialPageRoute(builder: (_) => AddTestScreen(testToEdit: test)),
+                           ).then((_) => vm.loadTests());
+                        }),
                       ),
-                      onChanged: (val) => _viewModel.searchTests(val),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () => AuthGuard.protect(context, () async {
+                         final confirm = await showDialog<bool>(
+                           context: context,
+                           builder: (ctx) => AlertDialog(
+                             title: Text(loc.translate('delete')),
+                             content: Text(loc.translate('delete_record')),
+                             actions: [
+                               TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.translate('cancel'))),
+                               TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.translate('delete'))),
+                             ],
+                           ),
+                         );
+                         
+                         if (confirm == true) {
+                           for (var id in vm.selectedIds.toList()) {
+                              final test = vm.tests.firstWhere((t) => t.id == id, orElse: () => TestModel(id: '', userId: '', testName: '', testDate: DateTime.now(), createdAt: DateTime.now()));
+                              if (test.id?.isNotEmpty == true) {
+                                await vm.deleteTest(id, test.attachmentUrl);
+                              }
+                           }
+                           vm.clearSelection();
+                           vm.loadTests(); 
+                         }
+                      }),
                     ),
                   ],
-                ),
-              ),
-              
-              // List
-              Expanded(
-                child: Consumer<TestViewModel>(
-                  builder: (context, vm, child) {
-                    if (vm.isLoading && vm.tests.isEmpty) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (vm.tests.isEmpty) {
-                       return Center(
-                         child: Column(
-                           mainAxisAlignment: MainAxisAlignment.center,
-                           children: [
-                             Icon(Icons.assignment_outlined, size: 64, color: Colors.grey.shade400),
-                             const SizedBox(height: 16),
-                             Text(
-                               _searchController.text.isNotEmpty ? loc.translate('no_matches_found') : loc.translate('no_tests_yet'),
-                               style: TextStyle(color: Colors.grey.shade600),
+                )
+              : (widget.isTab ? null : AppBar(title: Text(loc.translate('my_tests')))),
+            
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // Header & Search
+                  // Hide/Disable search in selection mode
+                  if (!isSelection)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    color: Theme.of(context).colorScheme.surface,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: loc.translate('search_test_hint'),
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          ),
+                          onChanged: (val) => vm.searchTests(val),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // List
+                  Expanded(
+                    child: vm.isLoading && vm.tests.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : vm.tests.isEmpty
+                        ? Center(
+                             child: Column(
+                               mainAxisAlignment: MainAxisAlignment.center,
+                               children: [
+                                 Icon(Icons.assignment_outlined, size: 64, color: Colors.grey.shade400),
+                                 const SizedBox(height: 16),
+                                 Text(
+                                   _searchController.text.isNotEmpty ? loc.translate('no_matches_found') : loc.translate('no_tests_yet'),
+                                   style: TextStyle(color: Colors.grey.shade600),
+                                 ),
+                               ],
                              ),
-                           ],
-                         ),
-                       );
-                    }
-
-                    return ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: vm.tests.length,
-                      itemBuilder: (context, index) {
-                        final test = vm.tests[index];
-                        return _buildTestCard(context, test);
-                      },
-                    );
-                  },
-                ),
+                           )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            itemCount: vm.tests.length + (isSelection ? 0 : 70),
+                            itemBuilder: (context, index) {
+                              if (index >= vm.tests.length) return const SizedBox(height: 10);
+                              final test = vm.tests[index];
+                              return _buildTestCard(context, test, vm);
+                            },
+                          ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddTestScreen()),
-            ).then((_) => _viewModel.loadTests()); // Refresh if needed (though stream handles it)
-          },
-          label: Text(loc.translate('add_test')),
-          icon: const Icon(Icons.add),
-        ),
+            ),
+            floatingActionButton: isSelection 
+              ? null 
+              : FloatingActionButton.extended(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AddTestScreen()),
+                    ).then((_) => vm.loadTests()); 
+                  },
+                  label: Text(loc.translate('add_test')),
+                  icon: const Icon(Icons.add),
+                ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildTestCard(BuildContext context, TestModel test) {
+  Widget _buildTestCard(BuildContext context, TestModel test, TestViewModel vm) {
     // Use device locale for formatting
     final locale = Localizations.localeOf(context).toString();
     final dateStr = DateFormat.yMMMd(locale).format(test.testDate);
     
+    final isSelection = vm.isSelectionMode;
+    // Check if test can be selected (has ID)
+    final hasId = test.id != null;
+    final isSelected = hasId && vm.isSelected(test.id!);
+
     return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+      elevation: isSelected ? 4 : 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12), 
+        side: isSelected ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide(color: Colors.grey.shade200)
+      ),
+      color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4) : null,
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => TestDetailsScreen(test: test)),
-          );
+          if (isSelection) {
+            if (hasId) vm.toggleSelection(test.id!);
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => TestDetailsScreen(test: test)),
+            );
+          }
+        },
+        onLongPress: () {
+          if (hasId) vm.toggleSelection(test.id!);
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -178,17 +251,15 @@ class _TestListScreenState extends State<TestListScreen> {
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
-              IconButton(
-                icon: const Icon(Icons.edit, size: 20, color: Colors.grey),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => AddTestScreen(testToEdit: test)),
-                  ).then((_) => _viewModel.loadTests());
-                },
-              ),
-              const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              if (!isSelection) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, color: Colors.grey),
+              ],
+              if (isSelection && hasId)
+                Checkbox(
+                  value: isSelected,
+                  onChanged: (v) => vm.toggleSelection(test.id!),
+                )
             ],
           ),
         ),

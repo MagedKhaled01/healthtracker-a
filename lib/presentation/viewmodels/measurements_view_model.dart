@@ -4,7 +4,9 @@ import '../../domain/entities/measurement.dart';
 import '../../domain/repositories/measurement_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class MeasurementsViewModel extends ChangeNotifier {
+import '../../viewmodels/mixins/selection_view_model_mixin.dart';
+
+class MeasurementsViewModel extends ChangeNotifier with SelectionViewModelMixin<String> {
   final MeasurementRepository _repository;
   final FirebaseAuth _auth;
 

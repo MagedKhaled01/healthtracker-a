@@ -33,41 +33,105 @@ class _MeasurementsView extends StatelessWidget {
     final measurements = viewModel.measurements;
     final colorScheme = Theme.of(context).colorScheme;
     final loc = AppLocalizations.of(context)!;
+    
+    final isSelection = viewModel.isSelectionMode;
+    final selectedCount = viewModel.selectedCount;
 
     return Scaffold(
-      appBar: isTab ? null : AppBar(title: Text(loc.translate('measurements'))),
+      appBar: isSelection
+        ? AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => viewModel.clearSelection(),
+            ),
+            title: Text("$selectedCount ${loc.translate('selected')}"),
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            actions: [
+              if (selectedCount == 1)
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => AuthGuard.protect(context, () {
+                     final id = viewModel.selectedIds.first;
+                     final m = viewModel.measurements.firstWhere((item) => item.id == id);
+                     viewModel.clearSelection();
+                     Navigator.push(
+                       context,
+                       MaterialPageRoute(
+                         builder: (_) => ChangeNotifierProvider.value(
+                           value: viewModel,
+                           child: AddMeasurementScreen(measurementToEdit: m),
+                         ),
+                       ),
+                     ).then((_) => viewModel.loadMeasurements());
+                  }),
+                ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => AuthGuard.protect(context, () async {
+                   final confirm = await showDialog<bool>(
+                     context: context,
+                     builder: (ctx) => AlertDialog(
+                       title: Text(loc.translate('delete')),
+                       content: Text(loc.translate('delete_measurement_confirm')),
+                       actions: [
+                         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.translate('cancel'))),
+                         TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.translate('delete'))),
+                       ],
+                     ),
+                   );
+                   
+                   if (confirm == true) {
+                     for (var id in viewModel.selectedIds.toList()) {
+                        await viewModel.deleteMeasurement(id);
+                     }
+                     viewModel.clearSelection();
+                     viewModel.loadMeasurements(); // Refresh
+                   }
+                }),
+              ),
+            ],
+          )
+        : (isTab ? null : AppBar(title: Text(loc.translate('measurements')))),
       body: SafeArea(
         child: Column(
           children: [
             // 1. Header (Type Selector)
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: colorScheme.surface,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: MeasurementType.values.map((type) {
-                        final isSelected = viewModel.selectedType == type;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: FilterChip(
-                            showCheckmark: false,
-                            selected: isSelected,
-                            label: Text(loc.translate(type.name)), 
-                            onSelected: (bool selected) {
-                              if (selected) {
-                                viewModel.setType(type);
-                              }
-                            },
-                          ),
-                        );
-                      }).toList(),
-                    ),
+            // Disable changing types during selection to avoid confusion
+            AbsorbPointer(
+              absorbing: isSelection,
+              child: Opacity(
+                opacity: isSelection ? 0.5 : 1.0,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  color: colorScheme.surface,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: MeasurementType.values.map((type) {
+                            final isSelected = viewModel.selectedType == type;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: FilterChip(
+                                showCheckmark: false,
+                                selected: isSelected,
+                                label: Text(loc.translate(type.name)), 
+                                onSelected: (bool selected) {
+                                  if (selected) {
+                                    viewModel.clearSelection(); // Clear selection on type change
+                                    viewModel.setType(type);
+                                  }
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
 
@@ -106,8 +170,9 @@ class _MeasurementsView extends StatelessWidget {
                     },
                     child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: measurements.length,
+                    itemCount: measurements.length + (isSelection ? 0 : 80), // Fab Padding
                     itemBuilder: (context, index) {
+                      if (index >= measurements.length) return const SizedBox(height: 10);
                       final m = measurements[index];
                       // Use device locale for formatting
                       final locale = Localizations.localeOf(context).toString();
@@ -119,51 +184,65 @@ class _MeasurementsView extends StatelessWidget {
                         valueText = '${m.value?.toStringAsFixed(1) ?? "--"} ${m.unit}';
                       }
 
+                      final isItemSelected = viewModel.isSelected(m.id!);
+
                       return Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                        elevation: isItemSelected ? 4 : 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12), 
+                          side: isItemSelected ? BorderSide(color: colorScheme.primary, width: 2) : BorderSide(color: Colors.grey.shade200)
+                        ),
+                        color: isItemSelected ? colorScheme.primaryContainer.withOpacity(0.4) : null,
                         margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
+                          child: InkWell(
                           onTap: () {
-                             Navigator.push(
-                               context,
-                               MaterialPageRoute(
-                                 builder: (_) => ChangeNotifierProvider.value(
-                                   value: viewModel,
-                                   child: AddMeasurementScreen(measurementToEdit: m),
-                                 ),
-                               ),
-                             ).then((_) => viewModel.loadMeasurements()); 
-                          },
-                          leading: CircleAvatar(
-                            backgroundColor: colorScheme.primaryContainer.withOpacity(0.5),
-                            child: Icon(_getIconForType(m.type), color: colorScheme.primary, size: 20),
-                          ),
-                          title: Text(
-                            valueText,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(DateFormat.yMMMd(locale).add_jm().format(m.date)),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-                            onPressed: () async {
-                              AuthGuard.protect(context, () async {
-                                 final confirm = await showDialog<bool>(
-                                   context: context,
-                                   builder: (ctx) => AlertDialog(
-                                     title: Text(loc.translate('delete_confirm_title')),
-                                     content: Text(loc.translate('delete_measurement_confirm')),
-                                     actions: [
-                                       TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.translate('no'))),
-                                       TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.translate('yes'))),
-                                     ],
+                             if (isSelection) {
+                               viewModel.toggleSelection(m.id!);
+                             } else {
+                               Navigator.push(
+                                 context,
+                                 MaterialPageRoute(
+                                   builder: (_) => ChangeNotifierProvider.value(
+                                     value: viewModel,
+                                     child: AddMeasurementScreen(measurementToEdit: m),
                                    ),
-                                 );
-                                 if (confirm == true && m.id != null) {
-                                   await viewModel.deleteMeasurement(m.id!);
-                                 }
-                              });
-                            },
+                                 ),
+                               ).then((_) => viewModel.loadMeasurements()); 
+                             }
+                          },
+                          onLongPress: () => viewModel.toggleSelection(m.id!),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: colorScheme.primaryContainer.withOpacity(0.5),
+                                  child: Icon(_getIconForType(m.type), color: colorScheme.primary, size: 20),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        valueText,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      ),
+                                      Text(
+                                        DateFormat.yMMMd(locale).add_jm().format(m.date),
+                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelection)
+                                  Checkbox(
+                                    value: isItemSelected,
+                                    onChanged: (v) => viewModel.toggleSelection(m.id!),
+                                  )
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -174,21 +253,23 @@ class _MeasurementsView extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => AuthGuard.protect(context, () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-               builder: (_) => ChangeNotifierProvider.value(
-                 value: viewModel,
-                 child: AddMeasurementScreen(initialType: viewModel.selectedType),
-               ),
-            ),
-          ).then((_) => viewModel.loadMeasurements());
-        }),
-        label: Text(loc.translate('add_log')),
-        icon: const Icon(Icons.add),
-      ),
+      floatingActionButton: isSelection
+        ? null
+        : FloatingActionButton.extended(
+            onPressed: () => AuthGuard.protect(context, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                   builder: (_) => ChangeNotifierProvider.value(
+                     value: viewModel,
+                     child: AddMeasurementScreen(initialType: viewModel.selectedType),
+                   ),
+                ),
+              ).then((_) => viewModel.loadMeasurements());
+            }),
+            label: Text(loc.translate('add_log')),
+            icon: const Icon(Icons.add),
+          ),
     );
   }
 
