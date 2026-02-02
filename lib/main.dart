@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'screens/auth_choice_screen.dart';
+import 'screens/auth_wrapper.dart';
 
 // ViewModels & Repositories
 import 'viewmodels/settings_view_model.dart';
@@ -69,7 +70,7 @@ class MyApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            home: const AuthChoiceScreen(),
+            home: const AuthWrapper(),
           );
         },
       ),
