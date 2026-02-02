@@ -197,22 +197,19 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   // Attachment
                   InkWell(
                     onTap: _pickFile,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(4),
-                        color: Colors.grey.shade50,
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: loc.translate('attachment'),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.attach_file),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.attach_file, color: Colors.grey.shade700),
-                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _attachmentPath ?? loc.translate('attach_file'),
                               style: TextStyle(
-                                color: _attachmentPath == null ? Colors.grey.shade600 : Colors.black,
+                                color: _attachmentPath == null ? Theme.of(context).hintColor : Theme.of(context).textTheme.bodyMedium?.color,
                                 fontWeight: _attachmentPath == null ? FontWeight.normal : FontWeight.bold,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -220,8 +217,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                           ),
                           if (_attachmentPath != null)
                              IconButton(
-                               icon: const Icon(Icons.close, size: 18), 
+                               icon: Icon(Icons.close, size: 18, color: Theme.of(context).colorScheme.error), 
                                onPressed: () => setState(() => _attachmentPath = null),
+                               constraints: const BoxConstraints(),
+                               padding: EdgeInsets.zero,
                              ),
                         ],
                       ),
@@ -231,12 +230,12 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
                   // Save Button
                   SizedBox(
+                    height: 50,
                     width: double.infinity,
-                    child: FilledButton.icon(
+                    child: ElevatedButton.icon(
                       onPressed: _saveVisit,
                       icon: const Icon(Icons.save),
                       label: Text(loc.translate('save_visit')),
-                      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
                     ),
                   ),
                 ],

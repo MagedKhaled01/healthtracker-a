@@ -198,17 +198,40 @@ class _AddTestScreenState extends State<AddTestScreen> {
                     const SizedBox(height: 16),
 
                     // Attachment Picker
-                    OutlinedButton.icon(
-                      onPressed: _pickFile,
-                      icon: const Icon(Icons.attach_file),
-                      label: Text(_selectedFileName ?? 
-                          (widget.testToEdit?.attachmentUrl != null ? loc.translate('change_attachment') : loc.translate('attach_pdf_image'))),
-                    ),
-                    if (_selectedFileName != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text("${loc.translate('selected')}: $_selectedFileName", style: const TextStyle(color: Colors.green)),
+                    InkWell(
+                      onTap: _pickFile,
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: loc.translate('attachment'),
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.attach_file),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _selectedFileName ?? (widget.testToEdit?.attachmentUrl != null ? loc.translate('change_attachment') : loc.translate('attach_pdf_image')),
+                                style: TextStyle(
+                                  color: _selectedFileName == null ? Theme.of(context).hintColor : Theme.of(context).textTheme.bodyMedium?.color,
+                                  fontWeight: _selectedFileName == null ? FontWeight.normal : FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (_selectedFileName != null)
+                               IconButton(
+                                 icon: Icon(Icons.close, size: 18, color: Theme.of(context).colorScheme.error), 
+                                 onPressed: () => setState(() {
+                                   _selectedFilePath = null;
+                                   _selectedFileName = null;
+                                 }),
+                                 constraints: const BoxConstraints(),
+                                 padding: EdgeInsets.zero,
+                               ),
+                          ],
+                        ),
                       ),
+                    ),
                     
                     const SizedBox(height: 24),
 
@@ -216,13 +239,9 @@ class _AddTestScreenState extends State<AddTestScreen> {
                     SizedBox(
                       height: 50,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                        ),
                         onPressed: vm.isLoading ? null : _submit,
                         child: vm.isLoading 
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const CircularProgressIndicator()
                           : Text(widget.testToEdit != null ? loc.translate('update_record') : loc.translate('save_record')),
                       ),
                     ),

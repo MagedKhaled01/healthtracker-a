@@ -144,11 +144,14 @@ class _DashboardShellState extends State<_DashboardShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: _onBottomNavTapped,
+        indicatorColor: Colors.transparent, 
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        height: 64,
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home),
-            label: loc.translate('home'),
+            icon: const Icon(Icons.grid_view_outlined),
+            selectedIcon: const Icon(Icons.grid_view),
+            label: loc.translate('home'), // Reverted to localized
           ),
           NavigationDestination(
             icon: const Icon(Icons.medication_outlined),
@@ -156,18 +159,18 @@ class _DashboardShellState extends State<_DashboardShell> {
             label: loc.translate('meds'),
           ),
           NavigationDestination(
-            icon: const Icon(Icons.local_hospital_outlined),
-            selectedIcon: const Icon(Icons.local_hospital),
+            icon: const Icon(Icons.medical_services_outlined),
+            selectedIcon: const Icon(Icons.medical_services),
             label: loc.translate('visits'),
           ),
           NavigationDestination(
-            icon: const Icon(Icons.science_outlined),
-            selectedIcon: const Icon(Icons.science),
+            icon: const Icon(Icons.assignment_outlined),
+            selectedIcon: const Icon(Icons.assignment),
             label: loc.translate('nav_tests'),
           ),
           NavigationDestination(
-            icon: const Icon(Icons.show_chart_outlined),
-            selectedIcon: const Icon(Icons.show_chart),
+            icon: const Icon(Icons.monitor_heart_outlined),
+            selectedIcon: const Icon(Icons.monitor_heart),
             label: loc.translate('nav_measure'),
           ),
         ],
@@ -312,12 +315,17 @@ class _DashboardHomeTabState extends State<_DashboardHomeTab> {
                       );
                     },
                     child: Card(
-                      elevation: 2,
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5), // Semi-transparent Slate
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)), // Teal border
+                      ),
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: colorScheme.primaryContainer,
-                          child: Icon(Icons.medication, color: colorScheme.onPrimaryContainer),
+                          backgroundColor: colorScheme.primary.withValues(alpha: 0.2),
+                          child: Icon(Icons.medication, color: colorScheme.primary),
                         ),
                         title: Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('$slot ${med.dosage != null ? "• ${med.dosage}" : ""}'),
@@ -347,35 +355,35 @@ class _DashboardHomeTabState extends State<_DashboardHomeTab> {
       mainAxisSpacing: 12,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.3,
       children: [
         _SummaryCard(
           title: loc.translate('weight'),
           value: viewModel.currentWeight?.toStringAsFixed(1) ?? '--',
           unit: 'kg',
           icon: Icons.monitor_weight,
-          color: Colors.blue.shade50,
+          accentColor: const Color(0xFF00BCD4), // Teal/Cyan for Weight
         ),
         _SummaryCard(
           title: loc.translate('bmi'),
           value: viewModel.bmi?.toStringAsFixed(1) ?? '--',
           unit: '',
           icon: Icons.accessibility_new,
-          color: Colors.purple.shade50,
+          accentColor: Colors.purple.shade300,
         ),
         _SummaryCard(
           title: loc.translate('pressure'),
           value: pressureValue,
           unit: 'mmHg',
           icon: Icons.favorite,
-          color: Colors.red.shade50,
+          accentColor: const Color(0xFF009688), // Teal/Green for Pressure (as in image)
         ),
         _SummaryCard(
           title: loc.translate('sugar'),
           value: viewModel.latestSugar?.value?.toStringAsFixed(0) ?? '--',
           unit: 'mg/dL',
           icon: Icons.bloodtype,
-          color: Colors.orange.shade50,
+          accentColor: Colors.orange, // Orange for Sugar
         ),
       ],
     );
@@ -387,44 +395,116 @@ class _SummaryCard extends StatelessWidget {
   final String value;
   final String unit;
   final IconData icon;
-  final Color color;
+  final Color accentColor;
 
   const _SummaryCard({
     required this.title,
     required this.value,
     required this.unit,
     required this.icon,
-    required this.color,
+    required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (!isDark) {
+      // Light Mode (Pastel Style)
+      return Card(
+        color: accentColor.withValues(alpha: 0.1),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                   Icon(icon, size: 20, color: Colors.black54),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                  ),
+                  if (unit.isNotEmpty)
+                    Text(unit, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Dark Mode (High Contrast Style)
+    // Structure:
+    // [Icon in box]
+    // [Title]
+    // [Colored Value] [Unit]
+    
     return Card(
-      color: color,
+      color: Theme.of(context).colorScheme.surface,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)), // Subtle Teal border
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Icon(icon, size: 20, color: Colors.black54),
-              ],
+            // Icon in colored box
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 20, color: accentColor),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const Spacer(),
+            Text(
+              title, 
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              )
+            ),
+            const SizedBox(height: 4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
               children: [
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: TextStyle(
+                    fontSize: 24, 
+                    fontWeight: FontWeight.bold, 
+                    color: accentColor // Colored Value
+                  ),
                 ),
-                if (unit.isNotEmpty)
-                  Text(unit, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                if (unit.isNotEmpty) ...[
+                   const SizedBox(width: 4),
+                   Text(
+                    unit, 
+                    style: TextStyle(
+                      fontSize: 12, 
+                      color: colorScheme.onSurfaceVariant
+                    )
+                  ),
+                ]
               ],
             ),
           ],
@@ -452,9 +532,9 @@ class _ActionCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainer,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

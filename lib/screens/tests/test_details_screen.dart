@@ -85,7 +85,7 @@ class TestDetailsScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         DateFormat.yMMMMEEEEd(Localizations.localeOf(context).toString()).format(test.testDate),
-                        style: TextStyle(color: Colors.grey.shade700, fontSize: 16),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16),
                       ),
                     ],
                   ),
@@ -114,7 +114,7 @@ class TestDetailsScreen extends StatelessWidget {
             
             // Attachment
             if (test.attachmentUrl != null) ...[
-               Text(loc.translate('attachment'), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+               Text(loc.translate('attachment'), style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                const SizedBox(height: 8),
                InkWell(
                  onTap: () async {
@@ -150,11 +150,11 @@ class TestDetailsScreen extends StatelessWidget {
                                style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                              ),
                              const SizedBox(height: 2),
-                             Text(loc.translate('tap_to_open'), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                             Text(loc.translate('tap_to_open'), style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                            ],
                          ),
                        ),
-                       const Icon(Icons.open_in_new, size: 16, color: Colors.grey),
+                       Icon(Icons.open_in_new, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                      ],
                    ),
                  ),
@@ -187,13 +187,13 @@ class _DetailItem extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.grey),
+        Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(
                 content, 

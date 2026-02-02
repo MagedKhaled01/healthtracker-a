@@ -45,8 +45,9 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                   icon: const Icon(Icons.close),
                   onPressed: () => _viewModel.clearSelection(),
                 ),
-                title: Text("$selectedCount ${loc.translate('selected')}"),
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                title: Text("$selectedCount ${loc.translate('selected')}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Seamless
+                iconTheme: const IconThemeData(color: Colors.white),
                 actions: [
                   if (selectedCount == 1)
                     IconButton(
@@ -106,7 +107,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                     
                     return Card(
                       elevation: isSelected ? 4 : 2,
-                      color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4) : null,
+                      color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15) : Theme.of(context).colorScheme.surface, // Cleaner highlight
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -140,14 +141,15 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                       children: [
                                         Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                         if (med.dosage != null)
-                                          Text(med.dosage!, style: const TextStyle(color: Colors.grey)),
+                                          Text(med.dosage!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                       ],
                                     ),
                                   ),
                                   if (isSelection)
-                                    Checkbox(
-                                      value: isSelected,
-                                      onChanged: (v) => _viewModel.toggleSelection(med.id!),
+                                    Icon(
+                                      isSelected ? Icons.check_circle : Icons.circle_outlined,
+                                      color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
+                                      size: 24,
                                     )
                                 ],
                               ),
@@ -183,9 +185,14 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                      final isTaken = med.isTaken(DateTime.now(), time);
                                      return ActionChip(
                                        label: Text(time),
-                                       avatar: Icon(isTaken ? Icons.check_circle : Icons.circle_outlined, size: 16, color: isTaken ? Colors.white : Theme.of(context).colorScheme.primary),
-                                       backgroundColor: isTaken ? Colors.green : null,
-                                       labelStyle: TextStyle(color: isTaken ? Colors.white : null),
+                                       avatar: Icon(
+                                         isTaken ? Icons.check_circle : Icons.circle_outlined, 
+                                         size: 16, 
+                                         color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary
+                                       ),
+                                       backgroundColor: isTaken ? Theme.of(context).colorScheme.primary : null,
+                                       labelStyle: TextStyle(color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface),
+                                       side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
                                        onPressed: () {
                                          AuthGuard.protect(context, () {
                                             _viewModel.logIntake(med.id!, time, !isTaken);
@@ -198,7 +205,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                               if (med.doseTimes.isEmpty && med.frequency == 'PRN')
                                  Padding(
                                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                   child: Text(loc.translate('prn'), style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
+                                   child: Text(loc.translate('prn'), style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                  ),
                             ],
                           ),
@@ -211,6 +218,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
           floatingActionButton: isSelection
             ? null 
             : FloatingActionButton(
+                shape: const CircleBorder(),
                 onPressed: () => AuthGuard.protect(context, () {
                   Navigator.push(
                     context,

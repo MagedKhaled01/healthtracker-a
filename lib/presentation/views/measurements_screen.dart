@@ -44,8 +44,9 @@ class _MeasurementsView extends StatelessWidget {
               icon: const Icon(Icons.close),
               onPressed: () => viewModel.clearSelection(),
             ),
-            title: Text("$selectedCount ${loc.translate('selected')}"),
-            backgroundColor: colorScheme.surfaceContainerHighest,
+            title: Text("$selectedCount ${loc.translate('selected')}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Seamless
+            iconTheme: const IconThemeData(color: Colors.white),
             actions: [
               if (selectedCount == 1)
                 IconButton(
@@ -102,8 +103,7 @@ class _MeasurementsView extends StatelessWidget {
               child: Opacity(
                 opacity: isSelection ? 0.5 : 1.0,
                 child: Container(
-                  padding: const EdgeInsets.all(16),
-                  color: colorScheme.surface,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -134,6 +134,8 @@ class _MeasurementsView extends StatelessWidget {
                 ),
               ),
             ),
+            
+            const SizedBox(height: 12), // Spacing between filters and graph
 
             // 2. Graph (unchanged)
             if (measurements.isNotEmpty)
@@ -143,7 +145,7 @@ class _MeasurementsView extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: CustomPaint(
@@ -153,6 +155,8 @@ class _MeasurementsView extends StatelessWidget {
                   ),
                 ),
               ),
+              
+            const SizedBox(height: 16), // Spacing between graph and list
 
             if (measurements.isEmpty && !viewModel.isLoading)
                Padding(
@@ -190,9 +194,9 @@ class _MeasurementsView extends StatelessWidget {
                         elevation: isItemSelected ? 4 : 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12), 
-                          side: isItemSelected ? BorderSide(color: colorScheme.primary, width: 2) : BorderSide(color: Colors.grey.shade200)
+                          side: isItemSelected ? BorderSide(color: colorScheme.primary, width: 2) : BorderSide(color: colorScheme.outlineVariant)
                         ),
-                        color: isItemSelected ? colorScheme.primaryContainer.withOpacity(0.4) : null,
+                        color: isItemSelected ? colorScheme.primary.withValues(alpha: 0.15) : colorScheme.surface,
                         margin: const EdgeInsets.only(bottom: 8),
                           child: InkWell(
                           onTap: () {
@@ -217,7 +221,7 @@ class _MeasurementsView extends StatelessWidget {
                             child: Row(
                               children: [
                                 CircleAvatar(
-                                  backgroundColor: colorScheme.primaryContainer.withOpacity(0.5),
+                                  backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.5),
                                   child: Icon(_getIconForType(m.type), color: colorScheme.primary, size: 20),
                                 ),
                                 const SizedBox(width: 16),
@@ -231,16 +235,17 @@ class _MeasurementsView extends StatelessWidget {
                                       ),
                                       Text(
                                         DateFormat.yMMMd(locale).add_jm().format(m.date),
-                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                        style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
                                       ),
                                     ],
                                   ),
                                 ),
-                                if (isSelection)
-                                  Checkbox(
-                                    value: isItemSelected,
-                                    onChanged: (v) => viewModel.toggleSelection(m.id!),
-                                  )
+                                  if (isSelection)
+                                    Icon(
+                                      isItemSelected ? Icons.check_circle : Icons.circle_outlined,
+                                      color: isItemSelected ? colorScheme.primary : colorScheme.outline,
+                                      size: 24,
+                                    )
                               ],
                             ),
                           ),
@@ -255,7 +260,8 @@ class _MeasurementsView extends StatelessWidget {
       ),
       floatingActionButton: isSelection
         ? null
-        : FloatingActionButton.extended(
+        : FloatingActionButton(
+            shape: const CircleBorder(),
             onPressed: () => AuthGuard.protect(context, () {
               Navigator.push(
                 context,
@@ -267,8 +273,7 @@ class _MeasurementsView extends StatelessWidget {
                 ),
               ).then((_) => viewModel.loadMeasurements());
             }),
-            label: Text(loc.translate('add_log')),
-            icon: const Icon(Icons.add),
+            child: const Icon(Icons.add),
           ),
     );
   }
@@ -307,13 +312,13 @@ class _TrendGraphPainter extends CustomPainter {
 
     // Second line paint (for Diastolic)
     final paint2 = Paint()
-      ..color = color.withOpacity(0.5)
+      ..color = color.withValues(alpha: 0.5)
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     final dotPaint2 = Paint()
-      ..color = color.withOpacity(0.5)
+      ..color = color.withValues(alpha: 0.5)
       ..style = PaintingStyle.fill;
     
     // 1. Sort by date

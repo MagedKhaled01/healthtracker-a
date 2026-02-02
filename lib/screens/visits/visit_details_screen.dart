@@ -40,7 +40,7 @@ class VisitDetailsScreen extends StatelessWidget {
                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.translate('cancel'))),
                      TextButton(
                        onPressed: () => Navigator.pop(ctx, true), 
-                       style: TextButton.styleFrom(foregroundColor: Colors.red),
+                       style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
                        child: Text(loc.translate('delete'))
                      ),
                    ],
@@ -85,12 +85,12 @@ class VisitDetailsScreen extends StatelessWidget {
                       if (visit.specialty != null)
                         Text(
                           visit.specialty!,
-                          style: TextStyle(color: Colors.grey.shade700, fontSize: 16, fontWeight: FontWeight.w500),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16, fontWeight: FontWeight.w500),
                         ),
                       const SizedBox(height: 4),
                       Text(
                         DateFormat.yMMMMEEEEd(Localizations.localeOf(context).toString()).format(visit.visitDate),
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14),
                       ),
                     ],
                   ),
@@ -120,7 +120,7 @@ class VisitDetailsScreen extends StatelessWidget {
             
             // Attachment
             if (visit.attachmentUrl != null) ...[
-               Text(loc.translate('attachment'), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+               Text(loc.translate('attachment'), style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                const SizedBox(height: 8),
                Container(
                  padding: const EdgeInsets.all(16),
@@ -143,7 +143,7 @@ class VisitDetailsScreen extends StatelessWidget {
                              overflow: TextOverflow.ellipsis,
                            ),
                            const SizedBox(height: 2),
-                           Text(loc.translate('file_attachment'), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            Text(loc.translate('file_attachment'), style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                          ],
                        ),
                      ),
@@ -176,13 +176,13 @@ class _DetailItem extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.grey),
+        Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(
                 content, 

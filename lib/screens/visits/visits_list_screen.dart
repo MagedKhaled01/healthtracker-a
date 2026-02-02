@@ -50,8 +50,9 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
                  icon: const Icon(Icons.close),
                  onPressed: () => vm.clearSelection(),
                ),
-               title: Text("$selectedCount ${loc.translate('selected')}"),
-               backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+               title: Text("$selectedCount ${loc.translate('selected')}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+               backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Seamless
+               iconTheme: const IconThemeData(color: Colors.white),
                actions: [
                  if (selectedCount == 1)
                    IconButton(
@@ -98,21 +99,45 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
                if (!isSelection)
                Container(
                 padding: const EdgeInsets.all(16),
-                color: Theme.of(context).colorScheme.surface,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: loc.translate('search_visit_hint'),
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                        filled: true,
-                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      onChanged: (val) => vm.searchVisits(val),
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: loc.translate('search_visit_hint'),
+                          hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                             borderRadius: BorderRadius.circular(30),
+                             borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                             borderRadius: BorderRadius.circular(30),
+                             borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        ),
+                        onChanged: (val) => vm.searchVisits(val),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (vm.availableSpecialties.isNotEmpty)
@@ -156,15 +181,15 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
           
           floatingActionButton: isSelection
             ? null
-            : FloatingActionButton.extended(
+            : FloatingActionButton(
+                shape: const CircleBorder(),
                 onPressed: () => AuthGuard.protect(context, () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AddVisitScreen()),
                   ).then((_) => vm.loadVisits());
                 }),
-                label: Text(loc.translate('add_visit')),
-                icon: const Icon(Icons.add),
+                child: const Icon(Icons.add),
               ),
         );
       },
@@ -176,11 +201,11 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_busy, size: 64, color: Colors.grey.shade400),
+          Icon(Icons.event_busy, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(
             _searchController.text.isNotEmpty ? loc.translate('no_visits_found') : loc.translate('no_visits_yet'),
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           if (vm.selectedSpecialties.isNotEmpty)
              TextButton(
@@ -200,9 +225,11 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
       elevation: isSelected ? 4 : 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12), 
-        side: isSelected ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide(color: Colors.grey.shade200)
+        side: isSelected 
+          ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) 
+          : BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2))
       ),
-      color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4) : null,
+      color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15) : Theme.of(context).colorScheme.surface,
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
@@ -225,7 +252,7 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
+                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -261,18 +288,18 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
                     if (visit.specialty != null)
                       Text(
                         visit.specialty!,
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
                       ),
                     const SizedBox(height: 4),
                     if (visit.clinicName != null)
                       Row(
                         children: [
-                          Icon(Icons.location_on, size: 14, color: Colors.grey.shade500),
+                          Icon(Icons.location_on, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               visit.clinicName!,
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -282,9 +309,10 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
                 ),
               ),
               if (isSelection)
-                Checkbox(
-                  value: isSelected,
-                  onChanged: (v) => vm.toggleSelection(visit.id!),
+                Icon(
+                  isSelected ? Icons.check_circle : Icons.circle_outlined,
+                  color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
+                  size: 24,
                 )
             ],
           ),

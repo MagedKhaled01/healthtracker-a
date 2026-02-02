@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Added for SystemChrome
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'screens/auth_choice_screen.dart';
 import 'screens/auth_wrapper.dart';
+import 'theme/app_theme.dart';
 
 // ViewModels & Repositories
 import 'viewmodels/settings_view_model.dart';
@@ -25,6 +27,15 @@ void main() async {
   );
   // Notifications must never block app startup
   await NotificationService.instance.initialize();
+
+  // Set default system chrome values
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent, // Transparent status bar
+    statusBarIconBrightness: Brightness.dark, // Dark text for status bar
+    systemNavigationBarColor: Color(0xFF0F172A), // Slate 900 to match App Theme
+    systemNavigationBarIconBrightness: Brightness.light, 
+  ));
+
   runApp(const MyApp());
 }
 
@@ -50,14 +61,8 @@ class MyApp extends StatelessWidget {
         builder: (context, settings, child) {
           return MaterialApp(
             title: 'Health Tracker',
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.light),
-              useMaterial3: true,
-            ),
-            darkTheme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.dark),
-              useMaterial3: true,
-            ),
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
             themeMode: settings.themeMode,
             locale: settings.locale,
             supportedLocales: const [

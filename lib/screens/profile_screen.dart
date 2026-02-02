@@ -133,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: CircleAvatar(
                               radius: 18,
                               backgroundColor: theme.colorScheme.primary,
-                              child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                              child: Icon(Icons.camera_alt, size: 16, color: theme.colorScheme.onPrimary),
                             ),
                           ),
                       ],
@@ -186,7 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                      Column(
                        children: [
                          Text(vm.name, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                         Text(loc.translate('health_enthusiast'), style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey)),
+                         Text(loc.translate('health_enthusiast'), style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                          const SizedBox(height: 24),
                          // Stats Row
                          Row(
@@ -241,7 +241,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.translate('cancel'))),
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, true), 
-                              style: TextButton.styleFrom(foregroundColor: Colors.red),
+                              style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
                               child: Text(loc.translate('yes'))
                             ),
                           ],
@@ -258,8 +258,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                       }
                     },
-                    icon: const Icon(Icons.logout, color: Colors.red),
-                    label: Text(loc.translate('logout'), style: const TextStyle(color: Colors.red)),
+                    icon: Icon(Icons.logout, color: theme.colorScheme.error),
+                    label: Text(loc.translate('logout'), style: TextStyle(color: theme.colorScheme.error)),
                   ),
                 ],
               ),
@@ -282,14 +282,14 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
           Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 8),
           Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(label, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );
