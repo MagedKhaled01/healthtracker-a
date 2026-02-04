@@ -67,7 +67,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['jpg', 'pdf', 'png', 'jpeg'],
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
     );
 
     if (result != null) {
@@ -126,9 +126,12 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       ),
       body: viewModel.isLoading 
         ? const Center(child: CircularProgressIndicator()) 
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
+        : Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,35 +198,73 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   const SizedBox(height: 16),
 
                   // Attachment
+                  // Attachment Modern
                   InkWell(
                     onTap: _pickFile,
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: loc.translate('attachment'),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.attach_file),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Theme.of(context).disabledColor.withValues(alpha: 0.3),
+                          width: 2,
+                          style: BorderStyle.solid,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _attachmentPath ?? loc.translate('attach_file'),
-                              style: TextStyle(
-                                color: _attachmentPath == null ? Theme.of(context).hintColor : Theme.of(context).textTheme.bodyMedium?.color,
-                                fontWeight: _attachmentPath == null ? FontWeight.normal : FontWeight.bold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                      child: _attachmentPath != null
+                          ? Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(Icons.description, color: Theme.of(context).primaryColor),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _attachmentPath!,
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        loc.translate('tap_to_change'),
+                                        style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.close, color: Theme.of(context).colorScheme.error),
+                                  onPressed: () => setState(() => _attachmentPath = null),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.cloud_upload_outlined, size: 40, color: Theme.of(context).colorScheme.secondary),
+                                const SizedBox(height: 8),
+                                Text(
+                                  loc.translate('attach_file'),
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "JPG, PNG, PDF",
+                                  style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12),
+                                ),
+                              ],
                             ),
-                          ),
-                          if (_attachmentPath != null)
-                             IconButton(
-                               icon: Icon(Icons.close, size: 18, color: Theme.of(context).colorScheme.error), 
-                               onPressed: () => setState(() => _attachmentPath = null),
-                               constraints: const BoxConstraints(),
-                               padding: EdgeInsets.zero,
-                             ),
-                        ],
-                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -236,12 +277,18 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                       onPressed: _saveVisit,
                       icon: const Icon(Icons.save),
                       label: Text(loc.translate('save_visit')),
+                       style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.black : null,
+                          foregroundColor: Theme.of(context).brightness == Brightness.light ? Colors.white : null,
+                        ),
                     ),
                   ),
                 ],
               ),
             ),
+            ),
           ),
+        ),
     );
   }
 }

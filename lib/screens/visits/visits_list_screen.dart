@@ -50,9 +50,9 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
                  icon: const Icon(Icons.close),
                  onPressed: () => vm.clearSelection(),
                ),
-               title: Text("$selectedCount ${loc.translate('selected')}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+               title: Text("$selectedCount ${loc.translate('selected')}", style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
                backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Seamless
-               iconTheme: const IconThemeData(color: Colors.white),
+               iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
                actions: [
                  if (selectedCount == 1)
                    IconButton(
@@ -166,9 +166,15 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
                   ? const Center(child: CircularProgressIndicator()) 
                   : vm.visits.isEmpty 
                     ? _buildEmptyState(context, vm, loc)
-                    : ListView.builder(
+                    : GridView.builder(
                         padding: const EdgeInsets.all(16),
-                        itemCount: vm.visits.length + (isSelection ? 0 : 40), // Padding
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 500,
+                          mainAxisExtent: 180, 
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: vm.visits.length + (isSelection ? 0 : 8), // Minimal padding as Grid handles spacing
                         itemBuilder: (context, index) {
                           if (index >= vm.visits.length) return const SizedBox(height: 10);
                           final visit = vm.visits[index];

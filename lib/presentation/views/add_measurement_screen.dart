@@ -126,10 +126,14 @@ class _AddMeasurementScreenState extends State<AddMeasurementScreen> {
         title: Text(widget.measurementToEdit != null ? loc.translate('edit_measurement') : loc.translate('add_measurement')),
       ),
       body: viewModel.isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
-        : SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
+        ? const Center(child: CircularProgressIndicator(strokeWidth: 2.5)) 
+        : Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,6 +248,8 @@ class _AddMeasurementScreenState extends State<AddMeasurementScreen> {
                   onPressed: _saveMeasurement,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.black : null,
+                    foregroundColor: Theme.of(context).brightness == Brightness.light ? Colors.white : null,
                   ),
                   child: Text(loc.translate('save')),
                 ),
@@ -252,6 +258,8 @@ class _AddMeasurementScreenState extends State<AddMeasurementScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

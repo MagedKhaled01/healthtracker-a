@@ -177,11 +177,14 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> with SingleTi
       body: AnimatedBuilder(
         animation: _viewModel,
         builder: (context, child) {
-          return Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(24.0),
-              children: [
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(24.0),
+                  children: [
                 // Shared Fields
                 TextFormField(
                   controller: _nameController,
@@ -255,14 +258,20 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> with SingleTi
                   height: 50,
                   child: ElevatedButton(
                     onPressed: _viewModel.isLoading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.black : null,
+                      foregroundColor: Theme.of(context).brightness == Brightness.light ? Colors.white : null,
+                    ),
                     child: _viewModel.isLoading
-                        ? const CircularProgressIndicator()
+                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
                         : Text(widget.medicationToEdit != null ? loc.translate('update_medication') : loc.translate('save_medication')),
                   ),
                 ),
               ],
             ),
-          );
+          ),
+        ),
+      );
         },
       ),
     );

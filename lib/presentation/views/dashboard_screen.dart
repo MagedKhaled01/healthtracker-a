@@ -215,23 +215,67 @@ class _DashboardHomeTabState extends State<_DashboardHomeTab> {
       // AppBar removed here, handled by Shell
       body: dashboardVM.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: () async {
-                 dashboardVM.loadDashboardData();
-                 _medViewModel.loadMedications();
-              },
-              child: ListView(
-                padding: const EdgeInsets.all(16.0),
-                children: [
-                   // 1. Pending Medications (Priority)
-                  _buildPendingMedicationsSection(context, colorScheme, loc),
-                  
-                  const SizedBox(height: 24),
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 800) {
+                  // Tablet/Desktop Layout (Wide)
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                       dashboardVM.loadDashboardData();
+                       _medViewModel.loadMedications();
+                    },
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(32.0),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left Column: Pending Medications (Priority)
+                          Expanded(
+                            flex: 3,
+                            child: _buildPendingMedicationsSection(context, colorScheme, loc),
+                          ),
+                          const SizedBox(width: 32),
+                          // Right Column: Summary Cards
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              children: [
+                                Text(
+                                  loc.translate('overview'), // Or similar header
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildSummaryGrid(dashboardVM, loc),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
 
-                  // 2. Summary Cards
-                  _buildSummaryGrid(dashboardVM, loc),
-                ],
-              ),
+                // Mobile Layout
+                return RefreshIndicator(
+                  onRefresh: () async {
+                     dashboardVM.loadDashboardData();
+                     _medViewModel.loadMedications();
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                       // 1. Pending Medications (Priority)
+                      _buildPendingMedicationsSection(context, colorScheme, loc),
+                      
+                      const SizedBox(height: 24),
+
+                      // 2. Summary Cards
+                      _buildSummaryGrid(dashboardVM, loc),
+                    ],
+                  ),
+                );
+              },
             ),
     );
   }

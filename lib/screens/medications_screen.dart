@@ -45,9 +45,9 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                   icon: const Icon(Icons.close),
                   onPressed: () => _viewModel.clearSelection(),
                 ),
-                title: Text("$selectedCount ${loc.translate('selected')}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                title: Text("$selectedCount ${loc.translate('selected')}", style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
                 backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Seamless
-                iconTheme: const IconThemeData(color: Colors.white),
+                iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
                 actions: [
                   if (selectedCount == 1)
                     IconButton(
@@ -96,19 +96,23 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
             ? const Center(child: CircularProgressIndicator())
             : _viewModel.medications.isEmpty
               ? Center(child: Text(loc.translate('no_medications')))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _viewModel.medications.length + 8, // Padding at bottom for FAB
+              : GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Bottom padding for FAB
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 500, 
+                    mainAxisExtent: 240, // sufficient height for content
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: _viewModel.medications.length,
                   itemBuilder: (context, index) {
-                    if (index >= _viewModel.medications.length) return const SizedBox(height: 10);
-                    
                     final med = _viewModel.medications[index];
                     final isSelected = _viewModel.isSelected(med.id!);
                     
                     return Card(
                       elevation: isSelected ? 4 : 2,
-                      color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15) : Theme.of(context).colorScheme.surface, // Cleaner highlight
-                      margin: const EdgeInsets.only(bottom: 12),
+                      color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15) : Theme.of(context).colorScheme.surface, 
+                      margin: EdgeInsets.zero, // Card margin handled by Grid spacing
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: isSelected ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
@@ -139,9 +143,9 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
                                         if (med.dosage != null)
-                                          Text(med.dosage!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                          Text(med.dosage!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
                                       ],
                                     ),
                                   ),
@@ -177,29 +181,39 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                    ),
                                  ),
                               const Divider(),
-                              AbsorbPointer(
-                                absorbing: isSelection, // Disable interaction in selection mode
-                                child: Wrap(
-                                  spacing: 8,
-                                  children: med.doseTimes.map((time) {
-                                     final isTaken = med.isTaken(DateTime.now(), time);
-                                     return ActionChip(
-                                       label: Text(time),
-                                       avatar: Icon(
-                                         isTaken ? Icons.check_circle : Icons.circle_outlined, 
-                                         size: 16, 
-                                         color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary
-                                       ),
-                                       backgroundColor: isTaken ? Theme.of(context).colorScheme.primary : null,
-                                       labelStyle: TextStyle(color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface),
-                                       side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
-                                       onPressed: () {
-                                         AuthGuard.protect(context, () {
-                                            _viewModel.logIntake(med.id!, time, !isTaken);
-                                         });
-                                       },
-                                     );
-                                  }).toList(),
+                              Expanded(
+                                child: AbsorbPointer(
+                                  absorbing: isSelection,
+                                  child: SingleChildScrollView( // Allow scrolling within card if chips overflow
+                                    child: Wrap(
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      children: med.doseTimes.map((time) {
+                                         final isTaken = med.isTaken(DateTime.now(), time);
+                                         return ActionChip(
+                                           label: Text(time),
+                                           padding: EdgeInsets.zero,
+                                           visualDensity: VisualDensity.compact,
+                                           avatar: Icon(
+                                             isTaken ? Icons.check_circle : Icons.circle_outlined, 
+                                             size: 16, 
+                                             color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary
+                                           ),
+                                           backgroundColor: isTaken ? Theme.of(context).colorScheme.primary : null,
+                                           labelStyle: TextStyle(
+                                             color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
+                                             fontSize: 12,
+                                           ),
+                                           side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+                                           onPressed: () {
+                                             AuthGuard.protect(context, () {
+                                                _viewModel.logIntake(med.id!, time, !isTaken);
+                                             });
+                                           },
+                                         );
+                                      }).toList(),
+                                    ),
+                                  ),
                                 ),
                               ),
                               if (med.doseTimes.isEmpty && med.frequency == 'PRN')

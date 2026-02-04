@@ -44,9 +44,9 @@ class _MeasurementsView extends StatelessWidget {
               icon: const Icon(Icons.close),
               onPressed: () => viewModel.clearSelection(),
             ),
-            title: Text("$selectedCount ${loc.translate('selected')}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            title: Text("$selectedCount ${loc.translate('selected')}", style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
             backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Seamless
-            iconTheme: const IconThemeData(color: Colors.white),
+            iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
             actions: [
               if (selectedCount == 1)
                 IconButton(

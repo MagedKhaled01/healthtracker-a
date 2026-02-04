@@ -52,9 +52,9 @@ class _TestListScreenState extends State<TestListScreen> {
                     icon: const Icon(Icons.close),
                     onPressed: () => vm.clearSelection(),
                   ),
-                  title: Text("$selectedCount ${loc.translate('selected')}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  title: Text("$selectedCount ${loc.translate('selected')}", style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
                   backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Seamless
-                  iconTheme: const IconThemeData(color: Colors.white),
+                  iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
                   actions: [
                     if (selectedCount == 1)
                       IconButton(
@@ -170,11 +170,16 @@ class _TestListScreenState extends State<TestListScreen> {
                                ],
                              ),
                            )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            itemCount: vm.tests.length + (isSelection ? 0 : 70),
+                        : GridView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 500,
+                              mainAxisExtent: 140, 
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                            itemCount: vm.tests.length,
                             itemBuilder: (context, index) {
-                              if (index >= vm.tests.length) return const SizedBox(height: 10);
                               final test = vm.tests[index];
                               return _buildTestCard(context, test, vm);
                             },

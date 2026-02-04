@@ -72,7 +72,7 @@ class _AddTestScreenState extends State<AddTestScreen> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
          type: FileType.custom,
-         allowedExtensions: ['jpg', 'png', 'pdf', 'jpeg'],
+         allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
       );
 
       if (result != null) {
@@ -136,9 +136,12 @@ class _AddTestScreenState extends State<AddTestScreen> {
         value: _viewModel,
         child: Consumer<TestViewModel>(
           builder: (context, vm, child) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -198,38 +201,78 @@ class _AddTestScreenState extends State<AddTestScreen> {
                     const SizedBox(height: 16),
 
                     // Attachment Picker
+                    // Attachment Picker Modern
                     InkWell(
                       onTap: _pickFile,
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          labelText: loc.translate('attachment'),
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.attach_file),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Theme.of(context).disabledColor.withValues(alpha: 0.3),
+                            width: 2,
+                            style: BorderStyle.solid, // Flutter doesn't have native dashed, using solid for now or CustomPaint if needed. Let's stick to standard modern look first.
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                         ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _selectedFileName ?? (widget.testToEdit?.attachmentUrl != null ? loc.translate('change_attachment') : loc.translate('attach_pdf_image')),
-                                style: TextStyle(
-                                  color: _selectedFileName == null ? Theme.of(context).hintColor : Theme.of(context).textTheme.bodyMedium?.color,
-                                  fontWeight: _selectedFileName == null ? FontWeight.normal : FontWeight.bold,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                        child: _selectedFileName != null
+                            ? Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(Icons.description, color: Theme.of(context).primaryColor),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _selectedFileName!,
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          loc.translate('tap_to_change'),
+                                          style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.close, color: Theme.of(context).colorScheme.error),
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedFilePath = null;
+                                        _selectedFileName = null;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.cloud_upload_outlined, size: 40, color: Theme.of(context).colorScheme.secondary),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    loc.translate('attach_pdf_image'),
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "JPG, PNG, PDF",
+                                    style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12),
+                                  ),
+                                ],
                               ),
-                            ),
-                            if (_selectedFileName != null)
-                               IconButton(
-                                 icon: Icon(Icons.close, size: 18, color: Theme.of(context).colorScheme.error), 
-                                 onPressed: () => setState(() {
-                                   _selectedFilePath = null;
-                                   _selectedFileName = null;
-                                 }),
-                                 constraints: const BoxConstraints(),
-                                 padding: EdgeInsets.zero,
-                               ),
-                          ],
-                        ),
                       ),
                     ),
                     
@@ -240,15 +283,21 @@ class _AddTestScreenState extends State<AddTestScreen> {
                       height: 50,
                       child: ElevatedButton(
                         onPressed: vm.isLoading ? null : _submit,
+                         style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.black : null,
+                          foregroundColor: Theme.of(context).brightness == Brightness.light ? Colors.white : null,
+                        ),
                         child: vm.isLoading 
-                          ? const CircularProgressIndicator()
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
                           : Text(widget.testToEdit != null ? loc.translate('update_record') : loc.translate('save_record')),
                       ),
                     ),
                   ],
                 ),
               ),
-            );
+              ),
+            ),
+          );
           },
         ),
       ),
