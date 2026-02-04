@@ -96,153 +96,191 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
             ? const Center(child: CircularProgressIndicator())
             : _viewModel.medications.isEmpty
               ? Center(child: Text(loc.translate('no_medications')))
-              : GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Bottom padding for FAB
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 500, 
-                    mainAxisExtent: 240, // sufficient height for content
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: _viewModel.medications.length,
-                  itemBuilder: (context, index) {
-                    final med = _viewModel.medications[index];
-                    final isSelected = _viewModel.isSelected(med.id!);
-                    
-                    return Card(
-                      elevation: isSelected ? 4 : 2,
-                      color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15) : Theme.of(context).colorScheme.surface, 
-                      margin: EdgeInsets.zero, // Card margin handled by Grid spacing
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: isSelected ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          if (isSelection) {
-                            _viewModel.toggleSelection(med.id!);
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => AddMedicationScreen(medicationToEdit: med)),
-                            ).then((_) => _viewModel.loadMedications());
-                          }
-                        },
-                        onLongPress: () => _viewModel.toggleSelection(med.id!),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.medication, color: isSelected ? Theme.of(context).colorScheme.primary : null),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                        if (med.dosage != null)
-                                          Text(med.dosage!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                      ],
-                                    ),
-                                  ),
-                                  if (isSelection)
-                                    Icon(
-                                      isSelected ? Icons.check_circle : Icons.circle_outlined,
-                                      color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
-                                      size: 24,
-                                    )
-                                ],
-                              ),
-                              
-                              if (med.nextDoseAt != null && med.nextDoseAt!.isAfter(DateTime.now()))
-                                 Padding(
-                                   padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                   child: StreamBuilder(
-                                     stream: Stream.periodic(const Duration(seconds: 1)),
-                                     builder: (context, snapshot) {
-                                       final diff = med.nextDoseAt!.difference(DateTime.now());
-                                       if (diff.isNegative) return const SizedBox.shrink();
-                                       final hours = diff.inHours.toString().padLeft(2, '0');
-                                       final minutes = (diff.inMinutes % 60).toString().padLeft(2, '0');
-                                       final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
-                                       return Text(
-                                         "${loc.translate('next_dose_in')} $hours:$minutes:$seconds", 
-                                         style: TextStyle(
-                                           color: Theme.of(context).colorScheme.primary,
-                                           fontWeight: FontWeight.bold,
-                                           fontSize: 12
-                                         )
-                                       );
-                                     }
-                                   ),
-                                 ),
-                              const Divider(),
-                              Expanded(
-                                child: AbsorbPointer(
-                                  absorbing: isSelection,
-                                  child: SingleChildScrollView( // Allow scrolling within card if chips overflow
-                                    child: Wrap(
-                                      spacing: 8,
-                                      runSpacing: 4,
-                                      children: med.doseTimes.map((time) {
-                                         final isTaken = med.isTaken(DateTime.now(), time);
-                                         return ActionChip(
-                                           label: Text(time),
-                                           padding: EdgeInsets.zero,
-                                           visualDensity: VisualDensity.compact,
-                                           avatar: Icon(
-                                             isTaken ? Icons.check_circle : Icons.circle_outlined, 
-                                             size: 16, 
-                                             color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary
-                                           ),
-                                           backgroundColor: isTaken ? Theme.of(context).colorScheme.primary : null,
-                                           labelStyle: TextStyle(
-                                             color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
-                                             fontSize: 12,
-                                           ),
-                                           side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
-                                           onPressed: () {
-                                             AuthGuard.protect(context, () {
-                                                _viewModel.logIntake(med.id!, time, !isTaken);
-                                             });
-                                           },
-                                         );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (med.doseTimes.isEmpty && med.frequency == 'PRN')
-                                 Padding(
-                                   padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                   child: Text(loc.translate('prn'), style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                                 ),
-                            ],
-                          ),
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth < 600) {
+                      return ListView.builder(
+                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                         itemCount: _viewModel.medications.length,
+                         itemBuilder: (context, index) {
+                           final med = _viewModel.medications[index];
+                           final isSelected = _viewModel.isSelected(med.id!);
+                           return Padding(
+                             padding: const EdgeInsets.only(bottom: 12.0),
+                             child: _buildMedicationCard(context, med, isSelected, isSelection, loc, isGrid: false),
+                           );
+                         },
+                      );
+                    } else {
+                      return GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 500, 
+                          mainAxisExtent: 200, 
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
                         ),
-                      ),
-                    );
+                        itemCount: _viewModel.medications.length,
+                        itemBuilder: (context, index) {
+                          final med = _viewModel.medications[index];
+                          final isSelected = _viewModel.isSelected(med.id!);
+                          return _buildMedicationCard(context, med, isSelected, isSelection, loc, isGrid: true);
+                        },
+                      );
+                    }
                   },
                 ),
-          
-          floatingActionButton: isSelection
-            ? null 
-            : FloatingActionButton(
-                shape: const CircleBorder(),
-                onPressed: () => AuthGuard.protect(context, () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AddMedicationScreen()),
-                  ).then((_) => _viewModel.loadMedications());
-                }),
-                child: const Icon(Icons.add),
+                    
+
+           
+           floatingActionButton: isSelection
+             ? null 
+             : FloatingActionButton(
+                 shape: const CircleBorder(),
+                 onPressed: () => AuthGuard.protect(context, () {
+                   Navigator.push(
+                     context,
+                     MaterialPageRoute(builder: (_) => const AddMedicationScreen()),
+                   ).then((_) => _viewModel.loadMedications());
+                 }),
+                 child: const Icon(Icons.add),
+               ),
+         );
+       },
+     );
+   }
+  Widget _buildMedicationCard(BuildContext context, Medication med, bool isSelected, bool isSelection, AppLocalizations loc, {required bool isGrid}) {
+    return Card(
+      elevation: isSelected ? 4 : 2,
+      color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15) : Theme.of(context).colorScheme.surface, 
+      margin: EdgeInsets.zero, // Card margin handled by Grid spacing or ListView padding
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isSelected ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
+      ),
+      child: InkWell(
+        onTap: () {
+          if (isSelection) {
+            _viewModel.toggleSelection(med.id!);
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => AddMedicationScreen(medicationToEdit: med)),
+            ).then((_) => _viewModel.loadMedications());
+          }
+        },
+        onLongPress: () => _viewModel.toggleSelection(med.id!),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min, // Allow card to shrink/grow in ListView
+            children: [
+              Row(
+                children: [
+                   Icon(Icons.medication, color: isSelected ? Theme.of(context).colorScheme.primary : null),
+                   const SizedBox(width: 12),
+                   Expanded(
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+                         if (med.dosage != null)
+                           Text(med.dosage!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+                       ],
+                     ),
+                   ),
+                   if (isSelection)
+                     Icon(
+                       isSelected ? Icons.check_circle : Icons.circle_outlined,
+                       color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
+                       size: 24,
+                     )
+                ],
               ),
-        );
-      },
+              
+              if (med.nextDoseAt != null && med.nextDoseAt!.isAfter(DateTime.now()))
+                 Padding(
+                   padding: const EdgeInsets.symmetric(vertical: 4.0),
+                   child: StreamBuilder(
+                     stream: Stream.periodic(const Duration(seconds: 1)),
+                     builder: (context, snapshot) {
+                       final diff = med.nextDoseAt!.difference(DateTime.now());
+                       if (diff.isNegative) return const SizedBox.shrink();
+                       final hours = diff.inHours.toString().padLeft(2, '0');
+                       final minutes = (diff.inMinutes % 60).toString().padLeft(2, '0');
+                       final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
+                       return Text(
+                         "${loc.translate('next_dose_in')} $hours:$minutes:$seconds", 
+                         style: TextStyle(
+                           color: Theme.of(context).colorScheme.primary,
+                           fontWeight: FontWeight.bold,
+                           fontSize: 12
+                         )
+                       );
+                     }
+                   ),
+                 ),
+              const Divider(),
+              
+              // Conditional Logic: In Grid (fixed height), use Expanded to fill space and scroll content.
+              // In List (unbounded height), just render content and let card grow.
+              if (isGrid)
+                Expanded(
+                  child: AbsorbPointer(
+                    absorbing: isSelection,
+                    child: SingleChildScrollView( 
+                      child: _buildDoseChips(context, med, loc),
+                    ),
+                  ),
+                )
+              else
+                AbsorbPointer(
+                  absorbing: isSelection,
+                  child: _buildDoseChips(context, med, loc),
+                ),
+
+              if (med.doseTimes.isEmpty && med.frequency == 'PRN')
+                 Padding(
+                   padding: const EdgeInsets.symmetric(vertical: 8.0),
+                   child: Text(loc.translate('prn'), style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDoseChips(BuildContext context, Medication med, AppLocalizations loc) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: med.doseTimes.map((time) {
+         final isTaken = med.isTaken(DateTime.now(), time);
+         return ActionChip(
+           label: Text(time),
+           padding: EdgeInsets.zero,
+           visualDensity: VisualDensity.compact,
+           avatar: Icon(
+             isTaken ? Icons.check_circle : Icons.circle_outlined, 
+             size: 16, 
+             color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary
+           ),
+           backgroundColor: isTaken ? Theme.of(context).colorScheme.primary : null,
+           labelStyle: TextStyle(
+             color: isTaken ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
+             fontSize: 12,
+           ),
+           side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+           onPressed: () {
+             AuthGuard.protect(context, () {
+                _viewModel.logIntake(med.id!, time, !isTaken);
+             });
+           },
+         );
+      }).toList(),
     );
   }
 }

@@ -166,19 +166,35 @@ class _VisitsListScreenState extends State<VisitsListScreen> {
                   ? const Center(child: CircularProgressIndicator()) 
                   : vm.visits.isEmpty 
                     ? _buildEmptyState(context, vm, loc)
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 500,
-                          mainAxisExtent: 180, 
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: vm.visits.length + (isSelection ? 0 : 8), // Minimal padding as Grid handles spacing
-                        itemBuilder: (context, index) {
-                          if (index >= vm.visits.length) return const SizedBox(height: 10);
-                          final visit = vm.visits[index];
-                          return _buildVisitCard(context, visit, vm);
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          if (constraints.maxWidth < 600) {
+                            return ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: vm.visits.length + (isSelection ? 0 : 8),
+                              itemBuilder: (context, index) {
+                                if (index >= vm.visits.length) return const SizedBox(height: 10);
+                                final visit = vm.visits[index];
+                                return _buildVisitCard(context, visit, vm);
+                              },
+                            );
+                          } else {
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 500,
+                                mainAxisExtent: 130, // Reduced height for tablet grid
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                              itemCount: vm.visits.length + (isSelection ? 0 : 8),
+                              itemBuilder: (context, index) {
+                                if (index >= vm.visits.length) return const SizedBox(height: 10);
+                                final visit = vm.visits[index];
+                                return _buildVisitCard(context, visit, vm);
+                              },
+                            );
+                          }
                         },
                       ),
               ),

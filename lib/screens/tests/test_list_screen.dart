@@ -170,18 +170,33 @@ class _TestListScreenState extends State<TestListScreen> {
                                ],
                              ),
                            )
-                        : GridView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 500,
-                              mainAxisExtent: 140, 
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                            ),
-                            itemCount: vm.tests.length,
-                            itemBuilder: (context, index) {
-                              final test = vm.tests[index];
-                              return _buildTestCard(context, test, vm);
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              if (constraints.maxWidth < 600) {
+                                return ListView.builder(
+                                  padding: const EdgeInsets.only(bottom: 80, left: 16, right: 16, top: 8),
+                                  itemCount: vm.tests.length,
+                                  itemBuilder: (context, index) {
+                                    final test = vm.tests[index];
+                                    return _buildTestCard(context, test, vm);
+                                  },
+                                );
+                              } else {
+                                return GridView.builder(
+                                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: 500,
+                                    mainAxisExtent: 110, // Compact height for desktop
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                  ),
+                                  itemCount: vm.tests.length,
+                                  itemBuilder: (context, index) {
+                                    final test = vm.tests[index];
+                                    return _buildTestCard(context, test, vm);
+                                  },
+                                );
+                              }
                             },
                           ),
                   ),

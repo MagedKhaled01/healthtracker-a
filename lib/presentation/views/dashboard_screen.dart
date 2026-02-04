@@ -11,7 +11,9 @@ import '../../screens/profile_screen.dart';
 import '../../services/notification_service.dart';
 import '../../screens/tests/test_list_screen.dart';
 import '../../screens/visits/visits_list_screen.dart'; // Import Visits Screen
+
 import '../../l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPrefs
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -192,11 +194,26 @@ class _DashboardHomeTab extends StatefulWidget {
 
 class _DashboardHomeTabState extends State<_DashboardHomeTab> {
   final _medViewModel = MedicationViewModel(); // Local instance for this tab
+  bool _showSwipeTip = false;
 
   @override
   void initState() {
     super.initState();
     _medViewModel.loadMedications();
+    _checkTipStatus();
+  }
+
+  Future<void> _checkTipStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('has_seen_swipe_tip') != true) {
+      if (mounted) setState(() => _showSwipeTip = true);
+    }
+  }
+
+  Future<void> _dismissTip() async {
+    setState(() => _showSwipeTip = false);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_seen_swipe_tip', true);
   }
 
   @override
@@ -312,28 +329,63 @@ class _DashboardHomeTabState extends State<_DashboardHomeTab> {
             
             final pending = _medViewModel.pendingMedicationsForToday;
 
-            if (pending.isEmpty) {
-              return Card(
-                 elevation: 0,
-                 color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                 margin: EdgeInsets.zero,
-                 child: Padding(
-                   padding: const EdgeInsets.all(24.0),
-                   child: Center(
-                     child: Column(
-                       children: [
-                         const Icon(Icons.check_circle, color: Colors.green, size: 48),
-                         const SizedBox(height: 8),
-                         Text(loc.translate('all_caught_up'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                       ],
-                     ),
-                   ),
-                 ),
-              );
-            }
-
             return Column(
-              children: pending.take(2).map((entry) {
+              children: [
+                if (_showSwipeTip && pending.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.3)),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.swipe_right, color: Theme.of(context).colorScheme.tertiary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              loc.translate('swipe_to_take_hint') ?? "Tip: Swipe right to mark as taken!",
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onTertiaryContainer,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close, size: 18, color: Theme.of(context).colorScheme.onTertiaryContainer),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: _dismissTip,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                if (pending.isEmpty)
+                  Card(
+                     elevation: 0,
+                     color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                     margin: EdgeInsets.zero,
+                     child: Padding(
+                       padding: const EdgeInsets.all(24.0),
+                       child: Center(
+                         child: Column(
+                           children: [
+                             const Icon(Icons.check_circle, color: Colors.green, size: 48),
+                             const SizedBox(height: 8),
+                             Text(loc.translate('all_caught_up'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                           ],
+                         ),
+                       ),
+                     ),
+                  )
+                else
+                  ...pending.take(2).map((entry) {
                  final med = entry['med'] as dynamic; 
                  final slot = entry['slot'] as String;
                  
@@ -376,7 +428,9 @@ class _DashboardHomeTabState extends State<_DashboardHomeTab> {
                       ),
                     ),
                   );
+
               }).toList(),
+              ],
             );
           },
         ),

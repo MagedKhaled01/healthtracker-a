@@ -200,6 +200,7 @@ class AppLocalizations {
       'create_account': 'Create Account',
       'min_password_len': 'Min 6 chars',
       'invalid_email': 'Invalid Email',
+      'swipe_to_take_hint': 'Tip: Swipe right to mark as taken!',
     },
     'ar': {
       'app_title': 'متتبع الصحة',
@@ -384,6 +385,7 @@ class AppLocalizations {
       'create_account': 'إنشاء حساب',
       'min_password_len': '6 أحرف على الأقل',
       'invalid_email': 'بريد غير صالح',
+      'swipe_to_take_hint': 'تلميح: اسحب لليمين لتحديد كـ مأخوذ!',
     },
   };
 
